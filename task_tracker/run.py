@@ -7,6 +7,13 @@ A simple task management system with projects, tasks, and calendar view.
 import sys
 import os
 
+# Add the project root directory to the path to find the init_db module
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+
+# Initialize the database before importing the app
+from init_db import init_database
+init_database()
+
 # Add the backend directory to the path to find the app module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
 

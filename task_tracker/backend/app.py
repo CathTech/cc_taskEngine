@@ -4,43 +4,19 @@ import os
 from datetime import datetime
 import json
 
+# Import and run database initialization
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from init_db import init_database
+
 app = Flask(__name__, template_folder='../templates')
 
 # Database setup
 DATABASE = 'tasks.db'
 
 def init_db():
-    conn = sqlite3.connect(DATABASE)
-    c = conn.cursor()
-    
-    # Create projects table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS projects (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            name TEXT NOT NULL,
-            identifier TEXT UNIQUE NOT NULL
-        )
-    ''')
-    
-    # Create tasks table
-    c.execute('''
-        CREATE TABLE IF NOT EXISTS tasks (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            project_id INTEGER,
-            title TEXT NOT NULL,
-            description TEXT,
-            planned_date DATE,
-            deadline DATE,
-            priority TEXT DEFAULT 'Базовый',
-            show_in_calendar BOOLEAN DEFAULT 0,
-            completed BOOLEAN DEFAULT 0,
-            completion_date DATE,
-            FOREIGN KEY (project_id) REFERENCES projects (id)
-        )
-    ''')
-    
-    conn.commit()
-    conn.close()
+    init_database()  # Use the centralized initialization
 
 def get_db_connection():
     conn = sqlite3.connect(DATABASE)

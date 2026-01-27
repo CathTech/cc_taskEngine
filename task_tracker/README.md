@@ -41,7 +41,7 @@ pip install -r requirements.txt
 pip install -r requirements.txt
 ```
 
-2. Run the application:
+2. The database will be automatically initialized when you run the application:
 ```bash
 python run.py
 ```
@@ -49,6 +49,13 @@ python run.py
 3. Open your browser and go to `http://localhost:5000`
 
 4. Start by creating a project, then add tasks to it, and view everything in the calendar
+
+## Database Initialization
+
+The database is automatically created when the application starts. If you need to manually initialize or reset the database:
+
+- To initialize the database with sample data: `python setup_db.py --sample-data`
+- To initialize the database without sample data: `python setup_db.py`
 
 ## Project Structure
 
