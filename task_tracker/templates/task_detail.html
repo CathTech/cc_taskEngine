@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ task.title }} - Task Tracker</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            padding-top: 20px;
+            padding-bottom: 40px;
+            background-color: #f5f5f5;
+        }
+        .header {
+            margin-bottom: 30px;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: 1px solid rgba(0, 0, 0, 0.125);
+        }
+        .btn-group {
+            margin-bottom: 20px;
+        }
+        .task-details {
+            font-size: 1.1em;
+        }
+        .task-label {
+            font-weight: bold;
+            color: #495057;
+        }
+        .priority-badge {
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Задача {{ task_id_display }}</h1>
+            <p class="lead">{{ task.title }}</p>
+        </div>
+        
+        <div class="btn-group mb-4" role="group">
+            <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-secondary">Назад к проекту</a>
+            <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary">Редактировать задачу</a>
+            <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
+        </div>
+        
+        <div class="row">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Детали задачи</h3>
+                    </div>
+                    <div class="card-body task-details">
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">ID задачи:</span></div>
+                            <div class="col-sm-9">{{ task_id_display }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">Название:</span></div>
+                            <div class="col-sm-9">{{ task.title }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">Описание:</span></div>
+                            <div class="col-sm-9">{{ task.description or '-' }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">Запланировано на:</span></div>
+                            <div class="col-sm-9">{{ task.planned_date or '-' }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">Дедлайн:</span></div>
+                            <div class="col-sm-9">{{ task.deadline or '-' }}</div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">Приоритет:</span></div>
+                            <div class="col-sm-9">
+                                <span class="badge 
+                                    {% if task.priority == 'Срочный' %}bg-danger
+                                    {% elif task.priority == 'Важный' %}bg-warning text-dark
+                                    {% elif task.priority == 'Базовый' %}bg-primary
+                                    {% elif task.priority == 'Низкий' %}bg-secondary
+                                    {% else %}bg-info{% endif %}">
+                                    {{ task.priority }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">В календаре:</span></div>
+                            <div class="col-sm-9">
+                                {% if task.show_in_calendar %}
+                                    <span class="badge bg-success">Да</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Нет</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">Статус:</span></div>
+                            <div class="col-sm-9">
+                                {% if task.completed %}
+                                    <span class="badge bg-success">Выполнено</span>
+                                    <span class="ms-2">({{ task.completion_date }})</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Не выполнено</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-4">
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Действия</h4>
+                    </div>
+                    <div class="card-body">
+                        <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary w-100 mb-2">Редактировать</a>
+                        <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-secondary w-100 mb-2">К проекту</a>
+                        <a href="{{ url_for('calendar') }}" class="btn btn-info w-100">Календарь</a>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h4>Проект</h4>
+                    </div>
+                    <div class="card-body">
+                        <h5>{{ task.project_name }}</h5>
+                        <p>ID: {{ task.project_identifier }}</p>
+                        <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-outline-primary">Открыть проект</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
