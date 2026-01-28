@@ -98,35 +98,8 @@
         </div>
         
         <div class="row">
-            <!-- Новая -->
-            <div class="col-md-3">
-                <div class="kanban-column-header status-new">
-                    Новая
-                </div>
-                <div class="kanban-column" id="column-new" data-status="Новая">
-                    {% for task in tasks %}
-                        {% if task.kanban_status == 'Новая' and task.kanban_enabled %}
-                            <div class="kanban-task" draggable="true" data-task-id="{{ task.id }}" style="border-left: 4px solid {{ task.color or '#1098ad' }};">
-                                <div class="task-id">[{{ task.project_identifier }}-{{ task.id }}]</div>
-                                <div class="task-title">{{ task.title }}</div>
-                                <div class="task-description">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</div>
-                                <div class="task-priority">
-                                    <span class="badge 
-                                        {% if task.priority == 'Срочный' %}bg-danger
-                                        {% elif task.priority == 'Важный' %}bg-warning text-dark
-                                        {% elif task.priority == 'Базовый' %}bg-primary
-                                        {% elif task.priority == 'Низкий' %}bg-secondary
-                                        {% else %}bg-info{% endif %}
-                                    ">{{ task.priority }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            
             <!-- В работе -->
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="kanban-column-header status-in-progress">
                     В работе
                 </div>
@@ -152,35 +125,8 @@
                 </div>
             </div>
             
-            <!-- Горит -->
-            <div class="col-md-3">
-                <div class="kanban-column-header status-burning">
-                    Горит
-                </div>
-                <div class="kanban-column" id="column-burning" data-status="Горит">
-                    {% for task in tasks %}
-                        {% if task.kanban_status == 'Горит' and task.kanban_enabled %}
-                            <div class="kanban-task" draggable="true" data-task-id="{{ task.id }}" style="border-left: 4px solid {{ task.color or '#1098ad' }};">
-                                <div class="task-id">[{{ task.project_identifier }}-{{ task.id }}]</div>
-                                <div class="task-title">{{ task.title }}</div>
-                                <div class="task-description">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</div>
-                                <div class="task-priority">
-                                    <span class="badge 
-                                        {% if task.priority == 'Срочный' %}bg-danger
-                                        {% elif task.priority == 'Важный' %}bg-warning text-dark
-                                        {% elif task.priority == 'Базовый' %}bg-primary
-                                        {% elif task.priority == 'Низкий' %}bg-secondary
-                                        {% else %}bg-info{% endif %}
-                                    ">{{ task.priority }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            
             <!-- Важно -->
-            <div class="col-md-3">
+            <div class="col-md-4">
                 <div class="kanban-column-header status-important">
                     Важно
                 </div>
@@ -205,98 +151,15 @@
                     {% endfor %}
                 </div>
             </div>
-        </div>
-        
-        <div class="row mt-3">
-            <!-- Буфер -->
-            <div class="col-md-3">
-                <div class="kanban-column-header status-buffer">
-                    Буфер
-                </div>
-                <div class="kanban-column" id="column-buffer" data-status="Буфер">
-                    {% for task in tasks %}
-                        {% if task.kanban_status == 'Буфер' and task.kanban_enabled %}
-                            <div class="kanban-task" draggable="true" data-task-id="{{ task.id }}" style="border-left: 4px solid {{ task.color or '#1098ad' }};">
-                                <div class="task-id">[{{ task.project_identifier }}-{{ task.id }}]</div>
-                                <div class="task-title">{{ task.title }}</div>
-                                <div class="task-description">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</div>
-                                <div class="task-priority">
-                                    <span class="badge 
-                                        {% if task.priority == 'Срочный' %}bg-danger
-                                        {% elif task.priority == 'Важный' %}bg-warning text-dark
-                                        {% elif task.priority == 'Базовый' %}bg-primary
-                                        {% elif task.priority == 'Низкий' %}bg-secondary
-                                        {% else %}bg-info{% endif %}
-                                    ">{{ task.priority }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
             
-            <!-- Базовая -->
-            <div class="col-md-3">
-                <div class="kanban-column-header status-basic">
-                    Базовая
+            <!-- Горит -->
+            <div class="col-md-4">
+                <div class="kanban-column-header status-burning">
+                    Горит
                 </div>
-                <div class="kanban-column" id="column-basic" data-status="Базовая">
+                <div class="kanban-column" id="column-burning" data-status="Горит">
                     {% for task in tasks %}
-                        {% if task.kanban_status == 'Базовая' and task.kanban_enabled %}
-                            <div class="kanban-task" draggable="true" data-task-id="{{ task.id }}" style="border-left: 4px solid {{ task.color or '#1098ad' }};">
-                                <div class="task-id">[{{ task.project_identifier }}-{{ task.id }}]</div>
-                                <div class="task-title">{{ task.title }}</div>
-                                <div class="task-description">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</div>
-                                <div class="task-priority">
-                                    <span class="badge 
-                                        {% if task.priority == 'Срочный' %}bg-danger
-                                        {% elif task.priority == 'Важный' %}bg-warning text-dark
-                                        {% elif task.priority == 'Базовый' %}bg-primary
-                                        {% elif task.priority == 'Низкий' %}bg-secondary
-                                        {% else %}bg-info{% endif %}
-                                    ">{{ task.priority }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            
-            <!-- Закрытые -->
-            <div class="col-md-3">
-                <div class="kanban-column-header status-closed">
-                    Закрытые
-                </div>
-                <div class="kanban-column" id="column-closed" data-status="Закрытые">
-                    {% for task in tasks %}
-                        {% if task.kanban_status == 'Закрытые' and task.kanban_enabled %}
-                            <div class="kanban-task" draggable="true" data-task-id="{{ task.id }}" style="border-left: 4px solid {{ task.color or '#1098ad' }};">
-                                <div class="task-id">[{{ task.project_identifier }}-{{ task.id }}]</div>
-                                <div class="task-title">{{ task.title }}</div>
-                                <div class="task-description">{{ task.description[:50] }}{% if task.description|length > 50 %}...{% endif %}</div>
-                                <div class="task-priority">
-                                    <span class="badge 
-                                        {% if task.priority == 'Срочный' %}bg-danger
-                                        {% elif task.priority == 'Важный' %}bg-warning text-dark
-                                        {% elif task.priority == 'Базовый' %}bg-primary
-                                        {% elif task.priority == 'Низкий' %}bg-secondary
-                                        {% else %}bg-info{% endif %}
-                                    ">{{ task.priority }}</span>
-                                </div>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                </div>
-            </div>
-            
-            <!-- Все задачи -->
-            <div class="col-md-3">
-                <div class="kanban-column-header status-all">
-                    Все задачи
-                </div>
-                <div class="kanban-column" id="column-all" data-status="Все задачи">
-                    {% for task in tasks %}
-                        {% if task.kanban_status == 'Все задачи' and task.kanban_enabled %}
+                        {% if task.kanban_status == 'Горит' and task.kanban_enabled %}
                             <div class="kanban-task" draggable="true" data-task-id="{{ task.id }}" style="border-left: 4px solid {{ task.color or '#1098ad' }};">
                                 <div class="task-id">[{{ task.project_identifier }}-{{ task.id }}]</div>
                                 <div class="task-title">{{ task.title }}</div>
@@ -327,6 +190,15 @@
             tasks.forEach(task => {
                 task.addEventListener('dragstart', dragStart);
                 task.addEventListener('dragend', dragEnd);
+                task.addEventListener('click', function(e) {
+                    // Проверяем, что клик не был по элементу перетаскивания или другому внутреннему элементу
+                    if (!e.target.classList.contains('kanban-task') && !e.target.closest('.kanban-task')) {
+                        return;
+                    }
+                    
+                    const taskId = this.dataset.taskId;
+                    window.location.href = '/task/' + taskId;
+                });
             });
 
             columns.forEach(column => {
