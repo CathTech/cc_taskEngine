@@ -137,6 +137,9 @@ def edit_task(task_id):
         WHERE t.id = ?
     ''', (task_id,)).fetchone()
     
+    # Get all projects for the move-to-project feature
+    all_projects = conn.execute('SELECT * FROM projects ORDER BY name').fetchall()
+    
     if request.method == 'POST':
         title = request.form['title']
         description = request.form.get('description')
@@ -175,7 +178,7 @@ def edit_task(task_id):
     # Generate task ID for display
     task_id_display = f"{task['project_identifier']}-{task['id']}"
     conn.close()
-    return render_template('edit_task.html', task=task, task_id_display=task_id_display)
+    return render_template('edit_task.html', task=task, task_id_display=task_id_display, all_projects=all_projects)
 
 @app.route('/completed_tasks')
 def completed_tasks():
@@ -322,7 +325,7 @@ def create_task_from_calendar():
     redirect_url = url_for('select_project_for_task') + f'?date={date}' if date else url_for('select_project_for_task')
     return jsonify({'redirect_url': redirect_url})
 
-@app.route('/create_task_without_project', methods=['POST'])
+@app.route('/create_task_without_project', methods=['GET', 'POST'])
 def create_task_without_project():
     """Create a task without selecting a project first (for dump project)"""
     # Find or create dump project
@@ -347,7 +350,11 @@ def create_task_without_project():
     conn.commit()
     conn.close()
     
-    return jsonify({'redirect_url': url_for('edit_task', task_id=task_id)})
+    if request.method == 'POST':
+        return jsonify({'redirect_url': url_for('edit_task', task_id=task_id)})
+    else:
+        # For GET request, redirect directly to the edit task page
+        return redirect(url_for('edit_task', task_id=task_id))
 
 @app.route('/api/tasks')
 def api_tasks():

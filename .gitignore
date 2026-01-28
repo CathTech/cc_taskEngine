@@ -1,4 +1,4 @@
-```gitignore
+```
 # Python
 __pycache__/
 *.pyc
@@ -18,59 +18,42 @@ nosetests.xml
 coverage.xml
 *.cover
 *.log
-.DS_Store
-*.sqlite3
-*.sqlite3-journal
-Thumbs.db
-ehthumbs.db
-Icon?
-.directory
-.folders~
-metadata.json
+.git/modules/
 *.sublime-workspace
 .pytest_cache/
 .mypy_cache/
 .hypothesis/
 
-# Web
-node_modules/
-.sass-cache/
-.npm
-.yarn-integrity
-.yarn-metadata.json
-node_modules/
-jspm_packages/
-bower_components/
-*.min.js
-*.min.css
-coverage/
-lib-cov/
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-.DS_Store
-Thumbs.db
-
-# Environment
-.env
-.env.local
-.env.*
-!.env.example
-
-# Build and distribution
-dist/
+# Build artifacts
 build/
-*.egg-info/
-.eggs/
-.installed.cfg
 develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
 parts/
 sdist/
 var/
 wheels/
+*.egg-info/
+.installed.cfg
 *.egg
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*.swo
+*.tmp
+
+# OS
+.DS_Store
+Thumbs.db
 ```
