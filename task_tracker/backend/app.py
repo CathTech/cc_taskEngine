@@ -616,6 +616,58 @@ def api_task_details(task_id):
         return jsonify({'error': 'Task not found'}), 404
 
 
+@app.route('/api/update_task_datetime', methods=['POST'])
+def update_task_datetime():
+    """Update task's planned date and time when dragged from kanban to calendar"""
+    data = request.get_json()
+    task_id = data.get('task_id')
+    planned_date = data.get('planned_date')
+    planned_time = data.get('planned_time')
+    
+    if not task_id:
+        return jsonify({'error': 'Task ID is required'}), 400
+    
+    conn = get_db_connection()
+    try:
+        # Update the task with new planned date and time
+        if planned_time:
+            # If time is provided, update both date and time
+            conn.execute(
+                '''UPDATE tasks SET planned_date = ?, planned_start_time = ? 
+                   WHERE id = ?''',
+                (planned_date, planned_time, task_id)
+            )
+        else:
+            # If no time provided, just update the date
+            conn.execute(
+                '''UPDATE tasks SET planned_date = ?, planned_start_time = NULL 
+                   WHERE id = ?''',
+                (planned_date, task_id)
+            )
+        
+        conn.commit()
+        
+        # Get updated task data
+        updated_task = conn.execute(
+            '''SELECT t.*, p.identifier as project_identifier 
+               FROM tasks t 
+               JOIN projects p ON t.project_id = p.id 
+               WHERE t.id = ?''', (task_id,)
+        ).fetchone()
+        
+        conn.close()
+        
+        if updated_task:
+            task_dict = dict(updated_task)
+            return jsonify({'success': True, 'task': task_dict})
+        else:
+            return jsonify({'error': 'Task not found'}), 404
+            
+    except Exception as e:
+        conn.close()
+        return jsonify({'error': str(e)}), 500
+
+
 @app.route('/api/update_kanban_status', methods=['POST'])
 def update_kanban_status():
     data = request.get_json()
