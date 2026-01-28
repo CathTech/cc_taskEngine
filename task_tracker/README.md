@@ -57,6 +57,14 @@ The database is automatically created when the application starts. If you need t
 - To initialize the database with sample data: `python setup_db.py --sample-data`
 - To initialize the database without sample data: `python setup_db.py`
 
+## Database Updates
+
+To update the database schema with new fields required for latest functionality:
+
+- Run the update script: `python update_db.py`
+
+This script safely adds any missing columns to existing tables without affecting your current data. It ensures all required fields for the new features are present.
+
 ## Project Structure
 
 ```
