@@ -26,6 +26,7 @@ def get_db_connection():
 @app.route('/')
 def index():
     conn = get_db_connection()
+    
     # Get non-completed tasks sorted from newest to oldest (by ID)
     tasks = conn.execute('''
         SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
@@ -33,6 +34,20 @@ def index():
         JOIN projects p ON t.project_id = p.id
         WHERE t.completed = 0
         ORDER BY t.id DESC
+    ''').fetchall()
+    
+    # Get calendar events for the mini calendar
+    # Get tasks that should appear in calendar (either planned or deadline dates)
+    calendar_tasks = conn.execute('''
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.show_in_calendar = 1 AND (t.planned_date IS NOT NULL OR t.deadline IS NOT NULL)
+        ORDER BY 
+            CASE WHEN t.planned_start_time IS NOT NULL THEN 0 ELSE 1 END,
+            t.planned_date ASC,
+            t.planned_start_time ASC,
+            t.id DESC
     ''').fetchall()
     
     # Add overdue status to tasks
@@ -47,9 +62,62 @@ def index():
         tasks[i] = dict(task)
         tasks[i]['overdue'] = is_overdue
     
+    # Format calendar events
+    calendar_events = []
+    for task in calendar_tasks:
+        # Add planned date event if exists
+        if task['planned_date']:
+            # Use the task's color if available, otherwise default to priority-based colors
+            color = task['color'] if task['color'] else (
+                '#e03131' if task['priority'] == 'Срочный' else 
+                '#ff9f43' if task['priority'] == 'Важный' else
+                '#1098ad' if task['priority'] == 'Базовый' else
+                '#6c757d' if task['priority'] == 'Низкий' else '#3498db'
+            )
+            
+            # Combine date and time if both exist
+            start_datetime = task['planned_date']
+            if task['planned_start_time']:
+                start_datetime = f"{task['planned_date']}T{task['planned_start_time']}"
+            
+            calendar_events.append({
+                'title': f"[{task['project_identifier']}-{task['id']}] {task['title']}",
+                'start': start_datetime,
+                'color': color,
+                'extendedProps': {
+                    'taskId': task['id'],
+                    'projectId': task['project_id'],
+                    'description': task['description'],
+                    'priority': task['priority'],
+                    'completed': task['completed'],
+                    'color': task['color'],
+                    'startTime': task['planned_start_time']
+                }
+            })
+        
+        # Add deadline event if exists and it's different from planned date
+        if task['deadline'] and task['deadline'] != task['planned_date']:
+            # Use the task's color if available, otherwise default to red for deadlines
+            color = task['color'] if task['color'] else '#e03131'
+            
+            calendar_events.append({
+                'title': f"[{task['project_identifier']}-{task['id']}] DEADLINE: {task['title']}",
+                'start': task['deadline'],
+                'color': color,
+                'extendedProps': {
+                    'taskId': task['id'],
+                    'projectId': task['project_id'],
+                    'description': task['description'],
+                    'priority': task['priority'],
+                    'completed': task['completed'],
+                    'color': task['color'],
+                    'startTime': None
+                }
+            })
+    
     conn.close()
     
-    return render_template('index.html', tasks=tasks)
+    return render_template('index.html', tasks=tasks, events=json.dumps(calendar_events))
 
 @app.route('/projects')
 def projects():
@@ -453,6 +521,80 @@ def api_tasks():
         tasks_list.append(task_dict)
     
     return jsonify(tasks_list)
+
+
+@app.route('/api/calendar_events')
+def api_calendar_events():
+    """API endpoint to get calendar events for the index page calendar"""
+    conn = get_db_connection()
+    # Get tasks that should appear in calendar (either planned or deadline dates)
+    tasks = conn.execute('''
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.show_in_calendar = 1 AND (t.planned_date IS NOT NULL OR t.deadline IS NOT NULL)
+        ORDER BY 
+            CASE WHEN t.planned_start_time IS NOT NULL THEN 0 ELSE 1 END,
+            t.planned_date ASC,
+            t.planned_start_time ASC,
+            t.id DESC
+    ''').fetchall()
+    conn.close()
+    
+    # Format tasks for calendar
+    calendar_events = []
+    for task in tasks:
+        # Add planned date event if exists
+        if task['planned_date']:
+            # Use the task's color if available, otherwise default to priority-based colors
+            color = task['color'] if task['color'] else (
+                '#e03131' if task['priority'] == 'Срочный' else 
+                '#ff9f43' if task['priority'] == 'Важный' else
+                '#1098ad' if task['priority'] == 'Базовый' else
+                '#6c757d' if task['priority'] == 'Низкий' else '#3498db'
+            )
+            
+            # Combine date and time if both exist
+            start_datetime = task['planned_date']
+            if task['planned_start_time']:
+                start_datetime = f"{task['planned_date']}T{task['planned_start_time']}"
+            
+            calendar_events.append({
+                'title': f"[{task['project_identifier']}-{task['id']}] {task['title']}",
+                'start': start_datetime,
+                'color': color,
+                'extendedProps': {
+                    'taskId': task['id'],
+                    'projectId': task['project_id'],
+                    'description': task['description'],
+                    'priority': task['priority'],
+                    'completed': task['completed'],
+                    'color': task['color'],
+                    'startTime': task['planned_start_time']
+                }
+            })
+        
+        # Add deadline event if exists and it's different from planned date
+        if task['deadline'] and task['deadline'] != task['planned_date']:
+            # Use the task's color if available, otherwise default to red for deadlines
+            color = task['color'] if task['color'] else '#e03131'
+            
+            calendar_events.append({
+                'title': f"[{task['project_identifier']}-{task['id']}] DEADLINE: {task['title']}",
+                'start': task['deadline'],
+                'color': color,
+                'extendedProps': {
+                    'taskId': task['id'],
+                    'projectId': task['project_id'],
+                    'description': task['description'],
+                    'priority': task['priority'],
+                    'completed': task['completed'],
+                    'color': task['color'],
+                    'startTime': None
+                }
+            })
+    
+    return jsonify(calendar_events)
 
 @app.route('/api/update_kanban_status', methods=['POST'])
 def update_kanban_status():
