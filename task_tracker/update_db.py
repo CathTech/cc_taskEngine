@@ -54,7 +54,7 @@ def update_database_schema():
         tasks_updates_needed += 1
         
     # Check if kanban_enabled column exists
-    if check_and_add_column(conn, 'tasks', 'kanban_enabled', 'BOOLEAN DEFAULT 0'):
+    if check_and_add_column(conn, 'tasks', 'kanban_enabled', 'BOOLEAN DEFAULT 1'):
         tasks_updates_needed += 1
         
     # Check if kanban_status column exists
@@ -70,7 +70,11 @@ def update_database_schema():
         tasks_updates_needed += 1
     
     # Check if show_in_calendar column exists
-    if check_and_add_column(conn, 'tasks', 'show_in_calendar', 'BOOLEAN DEFAULT 0'):
+    if check_and_add_column(conn, 'tasks', 'show_in_calendar', 'BOOLEAN DEFAULT 1'):
+        tasks_updates_needed += 1
+        
+    # Check if responsible column exists in tasks table
+    if check_and_add_column(conn, 'tasks', 'responsible', 'TEXT'):
         tasks_updates_needed += 1
 
     # Check and create projects table if it doesn't exist
@@ -82,12 +86,16 @@ def update_database_schema():
             CREATE TABLE projects (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                identifier TEXT UNIQUE NOT NULL
+                identifier TEXT UNIQUE NOT NULL,
+                responsible TEXT
             )
         ''')
         print("Created projects table")
     else:
         print("Projects table already exists")
+        # Check if responsible column exists in projects table
+        if check_and_add_column(conn, 'projects', 'responsible', 'TEXT'):
+            tasks_updates_needed += 1
 
     # Check and create tasks table if it doesn't exist (as fallback)
     cursor.execute('''SELECT name FROM sqlite_master WHERE type='table' AND name='tasks' ''')
