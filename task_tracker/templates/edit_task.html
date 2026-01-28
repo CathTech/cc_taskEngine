@@ -50,6 +50,12 @@
                                 </div>
                                 
                                 <div class="mb-3">
+                                    <label for="planned_start_time" class="form-label">Время начала</label>
+                                    <input type="time" class="form-control" id="planned_start_time" name="planned_start_time"
+                                           value="{{ task.planned_start_time or '' }}">
+                                </div>
+                                
+                                <div class="mb-3">
                                     <label for="deadline" class="form-label">Дедлайн</label>
                                     <input type="date" class="form-control" id="deadline" name="deadline" 
                                            value="{{ task.deadline or '' }}">
@@ -64,6 +70,12 @@
                                         <option value="Важный" {% if task.priority == 'Важный' %}selected{% endif %}>Важный</option>
                                         <option value="Срочный" {% if task.priority == 'Срочный' %}selected{% endif %}>Срочный</option>
                                     </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="color" class="form-label">Цвет задачи</label>
+                                    <input type="color" class="form-control form-control-color" id="color" name="color" 
+                                           value="{{ task.color or '#1098ad' }}">
                                 </div>
                             </div>
                             
@@ -83,6 +95,26 @@
                                     <input type="checkbox" class="form-check-input" id="completed" name="completed" 
                                            {% if task.completed %}checked{% endif %}>
                                     <label class="form-check-label" for="completed">Выполнено</label>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="kanban_enabled" name="kanban_enabled"
+                                           {% if task.kanban_enabled %}checked{% endif %}>
+                                    <label class="form-check-label" for="kanban_enabled">Показывать в Kanban</label>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="kanban_status" class="form-label">Статус Kanban</label>
+                                    <select class="form-select" id="kanban_status" name="kanban_status">
+                                        <option value="Новая" {% if task.kanban_status == 'Новая' %}selected{% endif %}>Новая</option>
+                                        <option value="В работе" {% if task.kanban_status == 'В работе' %}selected{% endif %}>В работе</option>
+                                        <option value="Горит" {% if task.kanban_status == 'Горит' %}selected{% endif %}>Горит</option>
+                                        <option value="Важно" {% if task.kanban_status == 'Важно' %}selected{% endif %}>Важно</option>
+                                        <option value="Буфер" {% if task.kanban_status == 'Буфер' %}selected{% endif %}>Буфер</option>
+                                        <option value="Базовая" {% if task.kanban_status == 'Базовая' %}selected{% endif %}>Базовая</option>
+                                        <option value="Закрытые" {% if task.kanban_status == 'Закрытые' %}selected{% endif %}>Закрытые</option>
+                                        <option value="Все задачи" {% if task.kanban_status == 'Все задачи' %}selected{% endif %}>Все задачи</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>

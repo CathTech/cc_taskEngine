@@ -43,6 +43,7 @@
         <div class="btn-group mb-4" role="group">
             <a href="{{ url_for('index') }}" class="btn btn-secondary">Главная</a>
             <a href="{{ url_for('projects') }}" class="btn btn-primary">Проекты</a>
+            <a href="{{ url_for('kanban') }}" class="btn btn-warning">Kanban</a>
         </div>
         
         <div class="card">
@@ -140,6 +141,32 @@
                     // Show the modal
                     var taskModal = new bootstrap.Modal(document.getElementById('taskModal'));
                     taskModal.show();
+                },
+                dateClick: function(info) {
+                    // Handle click on empty date cell
+                    if (confirm('Создать новую задачу на эту дату?')) {
+                        fetch('/create_task_from_calendar', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                date: info.dateStr
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.redirect_url) {
+                                window.location.href = data.redirect_url;
+                            } else {
+                                alert('Ошибка создания задачи: ' + (data.error || 'Неизвестная ошибка'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error creating task:', error);
+                            alert('Ошибка при создании задачи');
+                        });
+                    }
                 },
                 eventDidMount: function(info) {
                     // Add tooltip to events

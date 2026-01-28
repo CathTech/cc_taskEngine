@@ -25,7 +25,18 @@ def get_db_connection():
 
 @app.route('/')
 def index():
-    return render_template('index.html')
+    conn = get_db_connection()
+    # Get non-completed tasks sorted from newest to oldest (by ID)
+    tasks = conn.execute('''
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.completed = 0
+        ORDER BY t.id DESC
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('index.html', tasks=tasks)
 
 @app.route('/projects')
 def projects():
@@ -82,32 +93,39 @@ def create_task(project_id):
     conn = get_db_connection()
     project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
     
+    # Get date parameter from URL if present
+    prefill_date = request.args.get('date', '')
+    
     if request.method == 'POST':
         title = request.form['title']
         description = request.form.get('description')
         planned_date = request.form.get('planned_date')
+        planned_start_time = request.form.get('planned_start_time')
         deadline = request.form.get('deadline')
         priority = request.form.get('priority', 'Базовый')
         show_in_calendar = bool(request.form.get('show_in_calendar'))
         completed = bool(request.form.get('completed'))
+        color = request.form.get('color', '#1098ad')
+        kanban_enabled = bool(request.form.get('kanban_enabled'))
+        kanban_status = request.form.get('kanban_status', 'Новая')
         
         completion_date = None
         if completed:
             completion_date = datetime.now().strftime('%Y-%m-%d')
         
         conn.execute('''
-            INSERT INTO tasks (project_id, title, description, planned_date, deadline, 
-                              priority, show_in_calendar, completed, completion_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ''', (project_id, title, description, planned_date, deadline, 
-              priority, show_in_calendar, completed, completion_date))
+            INSERT INTO tasks (project_id, title, description, planned_date, planned_start_time, deadline, 
+                              priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ''', (project_id, title, description, planned_date, planned_start_time, deadline, 
+              priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status))
         conn.commit()
         conn.close()
         
         return redirect(url_for('project_detail', project_id=project_id))
     
     conn.close()
-    return render_template('create_task.html', project=project)
+    return render_template('create_task.html', project=project, prefill_date=prefill_date)
 
 @app.route('/edit_task/<int:task_id>', methods=['GET', 'POST'])
 def edit_task(task_id):
@@ -123,10 +141,14 @@ def edit_task(task_id):
         title = request.form['title']
         description = request.form.get('description')
         planned_date = request.form.get('planned_date')
+        planned_start_time = request.form.get('planned_start_time')
         deadline = request.form.get('deadline')
         priority = request.form.get('priority', 'Базовый')
         show_in_calendar = bool(request.form.get('show_in_calendar'))
         completed = bool(request.form.get('completed'))
+        color = request.form.get('color', '#1098ad')
+        kanban_enabled = bool(request.form.get('kanban_enabled'))
+        kanban_status = request.form.get('kanban_status', 'Новая')
         
         completion_date = None
         if completed and not task['completion_date']:
@@ -140,11 +162,11 @@ def edit_task(task_id):
             completion_date = task['completion_date']
         
         conn.execute('''
-            UPDATE tasks SET title=?, description=?, planned_date=?, deadline=?, 
-                          priority=?, show_in_calendar=?, completed=?, completion_date=?
+            UPDATE tasks SET title=?, description=?, planned_date=?, planned_start_time=?, deadline=?, 
+                          priority=?, show_in_calendar=?, completed=?, completion_date=?, color=?, kanban_enabled=?, kanban_status=?
             WHERE id = ?
-        ''', (title, description, planned_date, deadline, priority, 
-              show_in_calendar, completed, completion_date, task_id))
+        ''', (title, description, planned_date, planned_start_time, deadline, priority, 
+              show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status, task_id))
         conn.commit()
         conn.close()
         
@@ -155,15 +177,73 @@ def edit_task(task_id):
     conn.close()
     return render_template('edit_task.html', task=task, task_id_display=task_id_display)
 
+@app.route('/completed_tasks')
+def completed_tasks():
+    conn = get_db_connection()
+    # Get completed tasks that were completed less than a week ago
+    tasks = conn.execute('''
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.completed = 1 
+        AND (
+            t.completion_date IS NULL 
+            OR t.completion_date >= date('now', '-7 days')
+        )
+        ORDER BY t.completion_date DESC, t.id DESC
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('completed_tasks.html', tasks=tasks)
+
+
+@app.route('/all_completed_tasks')
+def all_completed_tasks():
+    """Show all completed tasks including those completed more than a week ago"""
+    conn = get_db_connection()
+    tasks = conn.execute('''
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.completed = 1
+        ORDER BY t.completion_date DESC, t.id DESC
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('completed_tasks.html', tasks=tasks, show_all=True)
+
+
+@app.route('/kanban')
+def kanban():
+    conn = get_db_connection()
+    # Get all tasks that have Kanban enabled
+    tasks = conn.execute('''
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        FROM tasks t
+        JOIN projects p ON t.project_id = p.id
+        WHERE t.kanban_enabled = 1
+        ORDER BY t.id DESC
+    ''').fetchall()
+    conn.close()
+    
+    return render_template('kanban.html', tasks=tasks)
+
+
 @app.route('/calendar')
 def calendar():
     conn = get_db_connection()
     # Get tasks that should appear in calendar (either planned or deadline dates)
+    # Order by planned date/time, prioritizing tasks with time over those without time
     tasks = conn.execute('''
         SELECT t.*, p.name as project_name, p.identifier as project_identifier
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         WHERE t.show_in_calendar = 1 AND (t.planned_date IS NOT NULL OR t.deadline IS NOT NULL)
+        ORDER BY 
+            CASE WHEN t.planned_start_time IS NOT NULL THEN 0 ELSE 1 END,
+            t.planned_date ASC,
+            t.planned_start_time ASC,
+            t.id DESC
     ''').fetchall()
     conn.close()
     
@@ -172,38 +252,73 @@ def calendar():
     for task in tasks:
         # Add planned date event if exists
         if task['planned_date']:
+            # Use the task's color if available, otherwise default to priority-based colors
+            color = task['color'] if task['color'] else (
+                '#e03131' if task['priority'] == 'Срочный' else 
+                '#ff9f43' if task['priority'] == 'Важный' else
+                '#1098ad' if task['priority'] == 'Базовый' else
+                '#6c757d' if task['priority'] == 'Низкий' else '#3498db'
+            )
+            
+            # Combine date and time if both exist
+            start_datetime = task['planned_date']
+            if task['planned_start_time']:
+                start_datetime = f"{task['planned_date']}T{task['planned_start_time']}"
+            
             calendar_events.append({
                 'title': f"[{task['project_identifier']}-{task['id']}] {task['title']}",
-                'start': task['planned_date'],
-                'color': '#3174ad' if task['priority'] == 'Срочный' else 
-                         '#ff9f43' if task['priority'] == 'Важный' else
-                         '#1098ad' if task['priority'] == 'Базовый' else
-                         '#6c757d' if task['priority'] == 'Низкий' else '#e03131',
+                'start': start_datetime,
+                'color': color,
                 'extendedProps': {
                     'taskId': task['id'],
                     'projectId': task['project_id'],
                     'description': task['description'],
                     'priority': task['priority'],
-                    'completed': task['completed']
+                    'completed': task['completed'],
+                    'color': task['color'],
+                    'startTime': task['planned_start_time']
                 }
             })
         
         # Add deadline event if exists and it's different from planned date
         if task['deadline'] and task['deadline'] != task['planned_date']:
+            # Use the task's color if available, otherwise default to red for deadlines
+            color = task['color'] if task['color'] else '#e03131'
+            
             calendar_events.append({
                 'title': f"[{task['project_identifier']}-{task['id']}] DEADLINE: {task['title']}",
                 'start': task['deadline'],
-                'color': '#e03131',  # Red for deadlines
+                'color': color,
                 'extendedProps': {
                     'taskId': task['id'],
                     'projectId': task['project_id'],
                     'description': task['description'],
                     'priority': task['priority'],
-                    'completed': task['completed']
+                    'completed': task['completed'],
+                    'color': task['color'],
+                    'startTime': None
                 }
             })
     
     return render_template('calendar.html', events=json.dumps(calendar_events))
+
+
+@app.route('/create_task_from_calendar', methods=['POST'])
+def create_task_from_calendar():
+    """Create a task from calendar date click"""
+    data = request.get_json()
+    date = data.get('date')
+    
+    # Find projects to select one for the new task
+    conn = get_db_connection()
+    project = conn.execute('SELECT id FROM projects LIMIT 1').fetchone()
+    conn.close()
+    
+    if not project:
+        return jsonify({'error': 'No projects found'}), 400
+    
+    # Redirect to create task page with pre-filled date
+    return jsonify({'redirect_url': url_for('create_task', project_id=project['id'], date=date)})
 
 @app.route('/api/tasks')
 def api_tasks():
@@ -222,6 +337,38 @@ def api_tasks():
         tasks_list.append(task_dict)
     
     return jsonify(tasks_list)
+
+@app.route('/api/update_kanban_status', methods=['POST'])
+def update_kanban_status():
+    data = request.get_json()
+    task_id = data.get('task_id')
+    new_status = data.get('new_status')
+    
+    conn = get_db_connection()
+    conn.execute('UPDATE tasks SET kanban_status = ? WHERE id = ?', (new_status, task_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
+@app.route('/api/toggle_task_completed', methods=['POST'])
+def toggle_task_completed():
+    data = request.get_json()
+    task_id = data.get('task_id')
+    completed = data.get('completed')
+    
+    conn = get_db_connection()
+    
+    completion_date = None
+    if completed:
+        completion_date = datetime.now().strftime('%Y-%m-%d')
+    
+    conn.execute('UPDATE tasks SET completed = ?, completion_date = ? WHERE id = ?', 
+                 (completed, completion_date, task_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
 
 if __name__ == '__main__':
     init_db()
