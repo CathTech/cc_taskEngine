@@ -72,9 +72,34 @@
     
     <!-- Fixed add button -->
     <div class="fixed-add-button" style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
-        <a href="{{ url_for('create_task_without_project') }}" class="btn btn-success btn-lg rounded-circle shadow-lg" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;" title="Быстрая задача">
+        <button onclick="createQuickTask()" class="btn btn-success btn-lg rounded-circle shadow-lg" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;" title="Быстрая задача">
             +
-        </a>
+        </button>
     </div>
+    
+    <script>
+        function createQuickTask() {
+            fetch('{{ url_for('create_task_without_project') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.redirect_url) {
+                    window.location.href = data.redirect_url;
+                } else {
+                    // Fallback if JSON response is not as expected
+                    window.location.reload();
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                // Fallback to regular navigation if fetch fails
+                window.location.href = '{{ url_for('create_task_without_project') }}';
+            });
+        }
+    </script>
 </body>
 </html>
