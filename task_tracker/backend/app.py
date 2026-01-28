@@ -528,6 +528,69 @@ def move_task_to_project():
         return jsonify({'error': str(e)}), 500
 
 
+def check_ip_in_whitelist(ip_address):
+    """Check if IP address is in the whitelist"""
+    try:
+        with open('../whitelist.txt', 'r') as f:
+            whitelist = f.read().strip().split('\n')
+            whitelist = [line.strip() for line in whitelist if line.strip() and not line.startswith('#')]
+    except FileNotFoundError:
+        # If whitelist file doesn't exist, allow all IPs for backward compatibility
+        return True
+    
+    # Check exact match or subnet match
+    import ipaddress
+    for entry in whitelist:
+        try:
+            if '/' in entry:  # Subnet notation
+                network = ipaddress.IPv4Network(entry, strict=False)
+                if ipaddress.IPv4Address(ip_address) in network:
+                    return True
+            else:  # Exact IP match
+                if ip_address == entry:
+                    return True
+        except ValueError:
+            # Skip invalid entries
+            continue
+    
+    return False
+
+
+def get_client_ip():
+    """Get client IP address considering proxies"""
+    if request.headers.get('X-Forwarded-For'):
+        # Handle multiple IPs in X-Forwarded-For header
+        ip = request.headers.get('X-Forwarded-For').split(',')[0].strip()
+    elif request.headers.get('X-Real-IP'):
+        ip = request.headers.get('X-Real-IP')
+    else:
+        ip = request.remote_addr
+    return ip
+
+
+@app.route('/share_task/<int:task_id>')
+def share_task(task_id):
+    """Generate a shareable link for a task"""
+    task_url = f"{request.url_root}task/{task_id}"
+    return jsonify({
+        'task_id': task_id,
+        'url': task_url,
+        'success': True
+    })
+
+
+@app.route('/task/<int:task_id>/edit_allowed')
+def task_edit_allowed(task_id):
+    """Check if current IP is allowed to edit the task"""
+    client_ip = get_client_ip()
+    can_edit = check_ip_in_whitelist(client_ip)
+    return jsonify({
+        'task_id': task_id,
+        'can_edit': can_edit,
+        'client_ip': client_ip
+    })
+
+
 if __name__ == '__main__':
     init_db()
     app.run(debug=True, host='0.0.0.0', port=5000)

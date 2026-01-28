@@ -1,60 +1,53 @@
 ```
-# Python
+# Dependencies
+.venv/
+venv/
 __pycache__/
+
+# Logs and temp files
+*.log
+*.tmp
+*.swp
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# Editors
+.vscode/
+.idea/
+
+# Python specific
 *.pyc
 *.pyo
 *.pyd
 *.py~
 *.py.class
 *.py.backup
-*.swp
-*.swo
-.Python
-*.so
-*.egg-info/
-.eggs/
-
-# Virtual environments
-venv/
-.venv/
-env/
-.env/
-ENV/
-
-# Build artifacts
-build/
-dist/
-*.egg
-*.whl
-pip-log.txt
-pip-delete-this-directory.txt
-
-# Testing
-.coverage
-coverage/
-htmlcov/
-.nox/
-.tox/
-.pytest_cache/
-.hypothesis/
-
-# Logs
-*.log
-
-# Environment variables
-.env
-.env.local
-*.env*
-!.env.example
-
-# IDE
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS
-.DS_Store
-Thumbs.db
+*.py.swp
+*.py.swo
+*.py~*
+*.py.bak
+*.py.orig
+*.py.rej
+*.py.patch
+*.py.diff
+*.py.log
+*.py.tmp
+*.py.swx
+*.py.swn
+*.py.swp
+*.py.swo
+*.py.swm
+*.py.swl
+*.py.swt
+*.py.swk
+*.py.swg
+*.py.swf
+*.py.swe
+*.py.swd
+*.py.swc
+*.py.swb
+*.py.swa
 ```

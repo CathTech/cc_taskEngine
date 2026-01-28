@@ -88,7 +88,8 @@
         <div class="btn-group mb-4" role="group">
             <a href="{{ url_for('index') }}" class="btn btn-secondary">Главная</a>
             <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-secondary">Назад к проекту</a>
-            <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary">Редактировать задачу</a>
+            <a href="#" class="btn btn-success" onclick="shareTask()">Поделиться</a>
+            <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary" id="editButton">Редактировать задачу</a>
             <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
             <a href="{{ url_for('kanban') }}" class="btn btn-warning">Kanban</a>
         </div>
@@ -208,6 +209,29 @@
             const calendarStatus = document.getElementById('calendarStatus');
             const kanbanStatus = document.getElementById('kanbanStatus');
             
+            // Check if current IP is allowed to edit this task
+            fetch(`/task/${taskId}/edit_allowed`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.can_edit) {
+                        // Disable edit button if IP is not in whitelist
+                        const editBtn = document.getElementById('editButton');
+                        editBtn.classList.remove('btn-primary');
+                        editBtn.classList.add('btn-secondary');
+                        editBtn.classList.add('disabled');
+                        editBtn.setAttribute('aria-disabled', 'true');
+                        editBtn.innerHTML = 'Просмотр (редакт. запрещено)';
+                        editBtn.href = '#';
+                        
+                        // Disable toggle switches
+                        calendarToggle.disabled = true;
+                        kanbanToggle.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking edit permissions:', error);
+                });
+            
             // Function to update task visibility
             function updateTaskVisibility() {
                 fetch('/api/update_task_visibility', {
@@ -241,6 +265,36 @@
             calendarToggle.addEventListener('change', updateTaskVisibility);
             kanbanToggle.addEventListener('change', updateTaskVisibility);
         });
+        
+        function shareTask() {
+            const taskId = {{ task.id }};
+            fetch(`/share_task/${taskId}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Copy to clipboard and show notification
+                        navigator.clipboard.writeText(data.url).then(function() {
+                            // Show temporary notification
+                            const originalText = document.querySelector('.btn-success').textContent;
+                            document.querySelector('.btn-success').textContent = 'Скопировано!';
+                            
+                            setTimeout(function() {
+                                document.querySelector('.btn-success').textContent = originalText;
+                            }, 2000);
+                        }).catch(err => {
+                            console.error('Failed to copy: ', err);
+                            // Fallback: show modal with link
+                            alert('Ссылка для задачи: ' + data.url);
+                        });
+                    } else {
+                        alert('Ошибка при генерации ссылки');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка при получении ссылки');
+                });
+        }
     </script>
 </body>
 </html>
