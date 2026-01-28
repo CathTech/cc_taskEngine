@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ project.name }} - Task Tracker</title>
+    <title>Выполненные задачи - Task Tracker</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
@@ -49,20 +49,25 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>{{ project.name }}</h1>
-            <p class="lead">ID проекта: {{ project.identifier }}</p>
+            <h1>Выполненные задачи</h1>
+            <p class="lead">Задачи, которые были выполнены</p>
         </div>
         
         <div class="btn-group mb-4" role="group">
-            <a href="{{ url_for('projects') }}" class="btn btn-secondary">Все проекты</a>
-            <a href="{{ url_for('create_task', project_id=project.id) }}" class="btn btn-success">Создать задачу</a>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Главная</a>
+            <a href="{{ url_for('projects') }}" class="btn btn-primary">Проекты</a>
             <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
             <a href="{{ url_for('kanban') }}" class="btn btn-warning">Kanban</a>
+            {% if not show_all %}
+            <a href="{{ url_for('all_completed_tasks') }}" class="btn btn-outline-secondary">Все выполненные</a>
+            {% else %}
+            <a href="{{ url_for('completed_tasks') }}" class="btn btn-outline-secondary">Недавние выполненные</a>
+            {% endif %}
         </div>
         
         <div class="card">
             <div class="card-header">
-                <h3>Задачи проекта</h3>
+                <h3>Выполненные задачи</h3>
             </div>
             <div class="card-body">
                 {% if tasks %}
@@ -72,20 +77,22 @@
                             <tr>
                                 <th>ID</th>
                                 <th>Задача</th>
+                                <th>Проект</th>
                                 <th>Приоритет</th>
                                 <th>Запланировано</th>
                                 <th>Дедлайн</th>
-                                <th>Статус</th>
+                                <th>Дата выполнения</th>
                                 <th>Действия</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for task in tasks %}
-                            <tr class="{% if task.completed %}completed{% endif %}">
-                                <td>{{ project.identifier }}-{{ task.id }}</td>
+                            <tr class="completed">
+                                <td>{{ task.project_identifier }}-{{ task.id }}</td>
                                 <td>
                                     <a href="{{ url_for('task_detail', task_id=task.id) }}">{{ task.title }}</a>
                                 </td>
+                                <td>{{ task.project_name }}</td>
                                 <td>
                                     <span class="
                                         badge 
@@ -98,13 +105,7 @@
                                 </td>
                                 <td>{{ task.planned_date or '-' }}</td>
                                 <td>{{ task.deadline or '-' }}</td>
-                                <td>
-                                    {% if task.completed %}
-                                        <span class="badge bg-success">Выполнено</span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">Не выполнено</span>
-                                    {% endif %}
-                                </td>
+                                <td>{{ task.completion_date or '-' }}</td>
                                 <td>
                                     <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-sm btn-outline-primary">Редактировать</a>
                                 </td>
@@ -115,10 +116,8 @@
                 </div>
                 {% else %}
                 <div class="alert alert-info" role="alert">
-                    <h4 class="alert-heading">Нет задач</h4>
-                    <p>В этом проекте пока нет задач. Создайте первую задачу, чтобы начать работу.</p>
-                    <hr>
-                    <a href="{{ url_for('create_task', project_id=project.id) }}" class="btn btn-success">Создать задачу</a>
+                    <h4 class="alert-heading">Нет выполненных задач</h4>
+                    <p>Пока нет выполненных задач.</p>
                 </div>
                 {% endif %}
             </div>

@@ -23,11 +23,15 @@ def init_database():
             title TEXT NOT NULL,
             description TEXT,
             planned_date DATE,
+            planned_start_time TIME,
             deadline DATE,
             priority TEXT DEFAULT 'Базовый',
             show_in_calendar BOOLEAN DEFAULT 0,
             completed BOOLEAN DEFAULT 0,
             completion_date DATE,
+            color TEXT DEFAULT '#1098ad',
+            kanban_enabled BOOLEAN DEFAULT 0,
+            kanban_status TEXT DEFAULT 'Новая',
             FOREIGN KEY (project_id) REFERENCES projects (id)
         )
     ''')

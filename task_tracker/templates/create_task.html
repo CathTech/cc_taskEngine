@@ -45,7 +45,12 @@
                                 
                                 <div class="mb-3">
                                     <label for="planned_date" class="form-label">Запланировано на</label>
-                                    <input type="date" class="form-control" id="planned_date" name="planned_date">
+                                    <input type="date" class="form-control" id="planned_date" name="planned_date" value="{{ prefill_date }}">
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="planned_start_time" class="form-label">Время начала</label>
+                                    <input type="time" class="form-control" id="planned_start_time" name="planned_start_time">
                                 </div>
                                 
                                 <div class="mb-3">
@@ -63,6 +68,11 @@
                                         <option value="Срочный">Срочный</option>
                                     </select>
                                 </div>
+                                
+                                <div class="mb-3">
+                                    <label for="color" class="form-label">Цвет задачи</label>
+                                    <input type="color" class="form-control form-control-color" id="color" name="color" value="#1098ad">
+                                </div>
                             </div>
                             
                             <div class="col-md-6">
@@ -79,6 +89,25 @@
                                 <div class="mb-3 form-check">
                                     <input type="checkbox" class="form-check-input" id="completed" name="completed">
                                     <label class="form-check-label" for="completed">Выполнено</label>
+                                </div>
+                                
+                                <div class="mb-3 form-check">
+                                    <input type="checkbox" class="form-check-input" id="kanban_enabled" name="kanban_enabled">
+                                    <label class="form-check-label" for="kanban_enabled">Показывать в Kanban</label>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="kanban_status" class="form-label">Статус Kanban</label>
+                                    <select class="form-select" id="kanban_status" name="kanban_status">
+                                        <option value="Новая">Новая</option>
+                                        <option value="В работе">В работе</option>
+                                        <option value="Горит">Горит</option>
+                                        <option value="Важно">Важно</option>
+                                        <option value="Буфер">Буфер</option>
+                                        <option value="Базовая">Базовая</option>
+                                        <option value="Закрытые">Закрытые</option>
+                                        <option value="Все задачи">Все задачи</option>
+                                    </select>
                                 </div>
                             </div>
                         </div>

@@ -23,6 +23,32 @@
         .btn-group {
             margin-bottom: 20px;
         }
+        .task-card {
+            transition: transform 0.2s;
+            border-left: 4px solid;
+        }
+        .task-card:hover {
+            transform: translateY(-3px);
+        }
+        .priority-high {
+            border-left-color: #e03131; /* Red for urgent */
+        }
+        .priority-important {
+            border-left-color: #ff9f43; /* Orange for important */
+        }
+        .priority-normal {
+            border-left-color: #1098ad; /* Blue for normal */
+        }
+        .priority-low {
+            border-left-color: #6c757d; /* Gray for low */
+        }
+        .priority-default {
+            border-left-color: #3498db; /* Default blue */
+        }
+        .completed {
+            opacity: 0.6;
+            text-decoration: line-through;
+        }
     </style>
 </head>
 <body>
@@ -32,8 +58,67 @@
             <p class="lead">Система управления задачами</p>
         </div>
         
+        <div class="btn-group mb-4" role="group">
+            <a href="{{ url_for('projects') }}" class="btn btn-primary">Проекты</a>
+            <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
+            <a href="{{ url_for('kanban') }}" class="btn btn-warning">Kanban</a>
+            <a href="{{ url_for('create_project') }}" class="btn btn-success">Создать проект</a>
+            <a href="{{ url_for('completed_tasks') }}" class="btn btn-secondary">Выполненные задачи</a>
+        </div>
+        
         <div class="row justify-content-center">
-            <div class="col-md-8">
+            <div class="col-md-10">
+                {% if tasks %}
+                <div class="card">
+                    <div class="card-header">
+                        <h3>Активные задачи (не выполненные)</h3>
+                    </div>
+                    <div class="card-body">
+                        <div class="list-group">
+                            {% for task in tasks %}
+                            <div class="list-group-item task-card 
+                                {% if task.priority == 'Срочный' %}priority-high
+                                {% elif task.priority == 'Важный' %}priority-important
+                                {% elif task.priority == 'Базовый' %}priority-normal
+                                {% elif task.priority == 'Низкий' %}priority-low
+                                {% else %}priority-default{% endif %}
+                                {% if task.completed %}completed{% endif %}" 
+                                style="border-left-color: {{ task.color }};">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h5 class="mb-1">
+                                        <a href="{{ url_for('task_detail', task_id=task.id) }}">
+                                            [{{ task.project_identifier }}-{{ task.id }}] {{ task.title }}
+                                        </a>
+                                    </h5>
+                                    <small>{{ task.id }}</small>
+                                </div>
+                                <p class="mb-1">{{ task.description or 'Без описания' }}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <span class="badge 
+                                            {% if task.priority == 'Срочный' %}bg-danger
+                                            {% elif task.priority == 'Важный' %}bg-warning text-dark
+                                            {% elif task.priority == 'Базовый' %}bg-primary
+                                            {% elif task.priority == 'Низкий' %}bg-secondary
+                                            {% else %}bg-info{% endif %}
+                                        ">{{ task.priority }}</span>
+                                        {% if task.kanban_enabled %}
+                                        <span class="badge bg-info">Kanban</span>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <small class="text-muted">
+                                            {% if task.planned_date %}План: {{ task.planned_date }}{% endif %}
+                                            {% if task.deadline %} | Дедлайн: {{ task.deadline }}{% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
                 <div class="card">
                     <div class="card-body text-center">
                         <h3 class="card-title">Добро пожаловать в Task Tracker!</h3>
@@ -43,9 +128,11 @@
                             <a href="{{ url_for('projects') }}" class="btn btn-primary">Проекты</a>
                             <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
                             <a href="{{ url_for('create_project') }}" class="btn btn-success">Создать проект</a>
+                            <a href="{{ url_for('completed_tasks') }}" class="btn btn-secondary">Выполненные задачи</a>
                         </div>
                     </div>
                 </div>
+                {% endif %}
                 
                 <div class="card">
                     <div class="card-header">
@@ -56,6 +143,7 @@
                             <li><strong>Проекты:</strong> Группировка связанных задач</li>
                             <li><strong>Задачи:</strong> Управление задачами с датами, приоритетами и статусами</li>
                             <li><strong>Календарь:</strong> Визуализация задач по датам</li>
+                            <li><strong>Kanban:</strong> Панель управления задачами</li>
                         </ul>
                     </div>
                 </div>
