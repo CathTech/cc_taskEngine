@@ -32,6 +32,50 @@
         .priority-badge {
             margin-right: 5px;
         }
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ccc;
+            transition: .4s;
+            border-radius: 24px;
+        }
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+        input:checked + .slider {
+            background-color: #28a745;
+        }
+        input:checked + .slider:before {
+            transform: translateX(26px);
+        }
     </style>
 </head>
 <body>
@@ -45,6 +89,7 @@
             <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-secondary">Назад к проекту</a>
             <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary">Редактировать задачу</a>
             <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
+            <a href="{{ url_for('kanban') }}" class="btn btn-warning">Kanban</a>
         </div>
         
         <div class="row">
@@ -90,11 +135,25 @@
                         <div class="row mb-2">
                             <div class="col-sm-3"><span class="task-label">В календаре:</span></div>
                             <div class="col-sm-9">
-                                {% if task.show_in_calendar %}
-                                    <span class="badge bg-success">Да</span>
-                                {% else %}
-                                    <span class="badge bg-secondary">Нет</span>
-                                {% endif %}
+                                <div class="toggle-container">
+                                    <label class="switch">
+                                        <input type="checkbox" id="calendarToggle" {% if task.show_in_calendar %}checked{% endif %}>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span id="calendarStatus">{% if task.show_in_calendar %}Да{% else %}Нет{% endif %}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row mb-2">
+                            <div class="col-sm-3"><span class="task-label">В Kanban:</span></div>
+                            <div class="col-sm-9">
+                                <div class="toggle-container">
+                                    <label class="switch">
+                                        <input type="checkbox" id="kanbanToggle" {% if task.kanban_enabled %}checked{% endif %}>
+                                        <span class="slider"></span>
+                                    </label>
+                                    <span id="kanbanStatus">{% if task.kanban_enabled %}Да{% else %}Нет{% endif %}</span>
+                                </div>
                             </div>
                         </div>
                         <div class="row mb-2">
@@ -120,7 +179,8 @@
                     <div class="card-body">
                         <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary w-100 mb-2">Редактировать</a>
                         <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-secondary w-100 mb-2">К проекту</a>
-                        <a href="{{ url_for('calendar') }}" class="btn btn-info w-100">Календарь</a>
+                        <a href="{{ url_for('calendar') }}" class="btn btn-info w-100 mb-2">Календарь</a>
+                        <a href="{{ url_for('kanban') }}" class="btn btn-warning w-100">Kanban</a>
                     </div>
                 </div>
                 
@@ -139,5 +199,47 @@
     </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const taskId = {{ task.id }};
+            const calendarToggle = document.getElementById('calendarToggle');
+            const kanbanToggle = document.getElementById('kanbanToggle');
+            const calendarStatus = document.getElementById('calendarStatus');
+            const kanbanStatus = document.getElementById('kanbanStatus');
+            
+            // Function to update task visibility
+            function updateTaskVisibility() {
+                fetch('/api/update_task_visibility', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        show_in_calendar: calendarToggle.checked,
+                        kanban_enabled: kanbanToggle.checked
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update status text
+                        calendarStatus.textContent = calendarToggle.checked ? 'Да' : 'Нет';
+                        kanbanStatus.textContent = kanbanToggle.checked ? 'Да' : 'Нет';
+                    } else {
+                        alert('Ошибка обновления видимости задачи');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка обновления видимости задачи');
+                });
+            }
+            
+            // Add event listeners to toggles
+            calendarToggle.addEventListener('change', updateTaskVisibility);
+            kanbanToggle.addEventListener('change', updateTaskVisibility);
+        });
+    </script>
 </body>
 </html>

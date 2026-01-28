@@ -75,6 +75,12 @@
         .status-basic { background-color: #198754; } /* Базовая - green */
         .status-closed { background-color: #adb5bd; } /* Закрытые - light gray */
         .status-all { background-color: #20c997; } /* Все задачи - teal */
+        .fixed-add-button {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -88,6 +94,7 @@
             <a href="{{ url_for('index') }}" class="btn btn-secondary">Главная</a>
             <a href="{{ url_for('projects') }}" class="btn btn-primary">Проекты</a>
             <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
+            <a href="{{ url_for('select_project_for_task') }}" class="btn btn-success">Добавить задачу</a>
         </div>
         
         <div class="row">
@@ -404,5 +411,11 @@
             }
         });
     </script>
+    <!-- Fixed add button -->
+    <div class="fixed-add-button">
+        <a href="{{ url_for('create_task_without_project') }}" class="btn btn-success btn-lg rounded-circle shadow-lg" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;" title="Быстрая задача">
+            +
+        </a>
+    </div>
 </body>
 </html>
