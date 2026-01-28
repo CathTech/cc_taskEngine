@@ -214,6 +214,9 @@
                 
                 // Add temporary styling to all possible drop targets
                 columns.forEach(col => col.classList.add('drop-target'));
+                
+                // Also indicate that this is coming from kanban
+                e.dataTransfer.effectAllowed = 'copy';
             }
 
             function dragEnd(e) {

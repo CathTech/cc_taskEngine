@@ -350,6 +350,9 @@
                 
                 // Add temporary styling to all possible drop targets
                 columns.forEach(col => col.classList.add('drop-target'));
+                
+                // Also indicate that this is coming from kanban
+                e.dataTransfer.effectAllowed = 'copy';
             }
 
             function dragEnd(e) {
@@ -497,6 +500,11 @@
                             completedBtn.className = 'btn btn-outline-secondary btn-sm';
                             completedBtn.textContent = 'Выполнить';
                         }
+                        
+                        // Refresh the current page to update all data
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500); // Small delay to ensure update completes
                     } else {
                         alert('Ошибка обновления статуса задачи');
                     }

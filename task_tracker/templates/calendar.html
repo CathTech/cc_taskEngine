@@ -75,6 +75,39 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js'></script>
     <script>
+        // Simple notification function
+        function showNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.bottom = '20px';
+            notification.style.right = '20px';
+            notification.style.backgroundColor = '#28a745';
+            notification.style.color = 'white';
+            notification.style.padding = '15px 20px';
+            notification.style.borderRadius = '5px';
+            notification.style.zIndex = '9999';
+            notification.style.boxShadow = '0 4px 6px rgba(0,0,0,0.1)';
+            notification.style.opacity = '0';
+            notification.style.transition = 'opacity 0.3s ease-in-out';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Fade in
+            setTimeout(() => {
+                notification.style.opacity = '1';
+            }, 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.style.opacity = '0';
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 300);
+            }, 3000);
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             var calendarEl = document.getElementById('calendar');
             
@@ -171,12 +204,224 @@
                 eventDidMount: function(info) {
                     // Add tooltip to events
                     info.el.setAttribute('title', info.event.title);
+                },
+                // Enable external drag-and-drop
+                droppable: true,
+                eventReceive: function(info) {
+                    // Handle when a task is dropped from outside the calendar
+                    console.log('Event received:', info);
+                    
+                    // Open edit task modal with the selected date/time
+                    const taskId = info.event.extendedProps.taskId; // This will be the task ID
+                    const eventDate = info.event.start;
+                    
+                    // Redirect to edit task page with the new date
+                    window.location.href = `/edit_task/${taskId}`;
+                },
+                // Add a custom drop handler for external elements
+                drop: function(info) {
+                    console.log('Drop on calendar:', info);
                 }
             });
             
             calendar.render();
+            
+            // Make calendar accept external draggables
+            // We need to initialize the external drag functionality
+            initExternalDrag(calendar);
         });
+        
+        // Function to handle external drag and drop
+        function initExternalDrag(calendar) {
+            // This will handle the drop of tasks from kanban to calendar
+            const calendarEl = document.getElementById('calendar');
+            
+            // Add dragover listener to highlight drop area
+            calendarEl.addEventListener('dragover', function(e) {
+                e.preventDefault(); // Necessary to allow drop
+                this.classList.add('drag-over-calendar');
+                
+                // Create and show a time indicator line on the calendar
+                showTimeIndicator(e.clientY);
+            });
+            
+            calendarEl.addEventListener('dragleave', function(e) {
+                this.classList.remove('drag-over-calendar');
+                
+                // Remove the time indicator line
+                hideTimeIndicator();
+            });
+            
+            calendarEl.addEventListener('drop', function(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over-calendar');
+                
+                // Remove the time indicator line
+                hideTimeIndicator();
+                
+                // Get the task ID from the dragged element
+                const taskId = e.dataTransfer.getData('text/plain');
+                
+                if (taskId) {
+                    // Determine the date and time where the task was dropped
+                    // Calculate the date based on the calendar view and position
+                    const rect = this.getBoundingClientRect();
+                    const y = e.clientY - rect.top;
+                    
+                    // Calculate the time based on the vertical position
+                    const time = calculateTimeFromPosition(y, rect);
+                    
+                    // Determine the date by finding which date column the drop occurred in
+                    // This is complex with FullCalendar, so we'll use the current view's start date
+                    // as a reference and estimate the date based on horizontal position
+                    const date = getDateFromPosition(e.clientX, calendar);
+                    
+                    if (date && time) {
+                        const dateString = date.toISOString().split('T')[0];
+                        
+                        // Update the task's planned date and time via API
+                        fetch('/api/update_task_datetime', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                task_id: parseInt(taskId),
+                                planned_date: dateString,
+                                planned_time: time
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show a temporary notification
+                                showNotification(`Задача запланирована на ${dateString} ${time}`);
+                                
+                                // Reload the calendar to reflect the changes
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 1000); // Delay to allow user to see the notification
+                            } else {
+                                console.error('Error updating task:', data.error);
+                                alert('Ошибка обновления задачи: ' + (data.error || 'Неизвестная ошибка'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error updating task:', error);
+                            alert('Ошибка соединения при обновлении задачи');
+                        });
+                    } else {
+                        // Fallback to current date if we can't determine the date from position
+                        const today = new Date();
+                        const dateString = today.toISOString().split('T')[0];
+                        const time = '12:00'; // Default to noon
+                        
+                        // Update the task's planned date and time via API
+                        fetch('/api/update_task_datetime', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                task_id: parseInt(taskId),
+                                planned_date: dateString,
+                                planned_time: time
+                            })
+                        })
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                // Show a temporary notification
+                                showNotification(`Задача запланирована на ${dateString} ${time}`);
+                                
+                                // Reload the calendar to reflect the changes
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 1000); // Delay to allow user to see the notification
+                            } else {
+                                console.error('Error updating task:', data.error);
+                                alert('Ошибка обновления задачи: ' + (data.error || 'Неизвестная ошибка'));
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error updating task:', error);
+                            alert('Ошибка соединения при обновлении задачи');
+                        });
+                    }
+                }
+            });
+        }
+        
+        // Helper function to show time indicator line
+        function showTimeIndicator(clientY) {
+            // Remove any existing indicator
+            hideTimeIndicator();
+            
+            // Create a horizontal line element to show the time position
+            const indicator = document.createElement('div');
+            indicator.id = 'time-indicator';
+            indicator.style.position = 'fixed';
+            indicator.style.left = '0';
+            indicator.style.width = '100%';
+            indicator.style.height = '2px';
+            indicator.style.backgroundColor = '#007bff';
+            indicator.style.zIndex = '9998';
+            indicator.style.top = clientY + 'px';
+            indicator.style.pointerEvents = 'none';
+            
+            document.body.appendChild(indicator);
+        }
+        
+        // Helper function to hide time indicator line
+        function hideTimeIndicator() {
+            const indicator = document.getElementById('time-indicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+        
+        // Helper function to calculate time from position
+        function calculateTimeFromPosition(yPos, rect) {
+            // This is a simplified calculation based on the height of the calendar
+            // Time grid typically goes from 8am to 6pm (10 hours = 600 minutes)
+            const calendarTopTime = 8; // Start at 8 AM
+            const calendarTotalHours = 12; // Display 12 hours from 8am to 8pm (to cover full time grid)
+            const calendarTotalMinutes = calendarTotalHours * 60;
+            
+            // Calculate the percentage of the way down the visible time portion
+            // Assuming the time grid starts after the all-day slot area
+            const timeGridTop = rect.height * 0.1; // Approximate offset for all-day area
+            const timeGridHeight = rect.height * 0.9; // Remaining height for time slots
+            
+            // Calculate position within the time grid
+            const relativeY = Math.max(0, yPos - timeGridTop);
+            const percentDown = Math.min(1, relativeY / timeGridHeight);
+            const totalMinutesFromTop = percentDown * calendarTotalMinutes;
+            const hour = calendarTopTime + Math.floor(totalMinutesFromTop / 60);
+            const minute = Math.round((totalMinutesFromTop % 60) / 5) * 5; // Round to nearest 5 minutes
+            
+            // Format as HH:MM
+            const formattedHour = String(hour).padStart(2, '0');
+            const formattedMinute = String(minute).padStart(2, '0');
+            
+            return `${formattedHour}:${formattedMinute}`;
+        }
+        
+        // Helper function to get date from horizontal position
+        function getDateFromPosition(clientX, calendar) {
+            // This is a simplified approach - in a real implementation, 
+            // we would need to calculate based on the current calendar view
+            // For now, we'll return today's date as a fallback
+            return new Date();
+        }
     </script>
+    
+    <style>
+        .drag-over-calendar {
+            outline: 3px dashed #007bff;
+            outline-offset: -3px;
+        }
+    </style>
     
     <!-- Fixed add button -->
     <div class="fixed-add-button" style="position: fixed; bottom: 30px; right: 30px; z-index: 1000;">
