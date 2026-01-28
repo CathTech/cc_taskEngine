@@ -45,9 +45,15 @@
         .priority-default {
             border-left-color: #3498db; /* Default blue */
         }
-        .completed {
+        .completed-task {
             opacity: 0.6;
             text-decoration: line-through;
+            color: #6c757d !important; /* Dark gray */
+            font-style: italic;
+        }
+        .overdue-task {
+            color: #721c24 !important; /* Dark red */
+            font-weight: bold;
         }
     </style>
 </head>
@@ -59,6 +65,7 @@
         </div>
         
         <div class="btn-group mb-4" role="group">
+            <a href="{{ url_for('index') }}" class="btn btn-light">Главная</a>
             <a href="{{ url_for('projects') }}" class="btn btn-primary">Проекты</a>
             <a href="{{ url_for('calendar') }}" class="btn btn-info">Календарь</a>
             <a href="{{ url_for('kanban') }}" class="btn btn-warning">Kanban</a>
@@ -82,7 +89,8 @@
                                 {% elif task.priority == 'Базовый' %}priority-normal
                                 {% elif task.priority == 'Низкий' %}priority-low
                                 {% else %}priority-default{% endif %}
-                                {% if task.completed %}completed{% endif %}" 
+                                {% if task.completed %}completed-task{% endif %}
+                                {% if task.overdue %}overdue-task{% endif %}" 
                                 style="border-left-color: {{ task.color }};">
                                 <div class="d-flex w-100 justify-content-between">
                                     <h5 class="mb-1">
@@ -134,19 +142,7 @@
                 </div>
                 {% endif %}
                 
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Функциональность</h4>
-                    </div>
-                    <div class="card-body">
-                        <ul>
-                            <li><strong>Проекты:</strong> Группировка связанных задач</li>
-                            <li><strong>Задачи:</strong> Управление задачами с датами, приоритетами и статусами</li>
-                            <li><strong>Календарь:</strong> Визуализация задач по датам</li>
-                            <li><strong>Kanban:</strong> Панель управления задачами</li>
-                        </ul>
-                    </div>
-                </div>
+                
             </div>
         </div>
     </div>

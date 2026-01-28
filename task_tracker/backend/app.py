@@ -34,6 +34,19 @@ def index():
         WHERE t.completed = 0
         ORDER BY t.id DESC
     ''').fetchall()
+    
+    # Add overdue status to tasks
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
+    for i, task in enumerate(tasks):
+        is_overdue = False
+        if task['deadline'] and task['deadline'] < today:
+            is_overdue = True
+        elif task['planned_date'] and task['planned_date'] < today:
+            is_overdue = True
+        tasks[i] = dict(task)
+        tasks[i]['overdue'] = is_overdue
+    
     conn.close()
     
     return render_template('index.html', tasks=tasks)
@@ -50,6 +63,19 @@ def project_detail(project_id):
     conn = get_db_connection()
     project = conn.execute('SELECT * FROM projects WHERE id = ?', (project_id,)).fetchone()
     tasks = conn.execute('SELECT * FROM tasks WHERE project_id = ?', (project_id,)).fetchall()
+    
+    # Add overdue status to tasks
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
+    for i, task in enumerate(tasks):
+        is_overdue = False
+        if task['deadline'] and task['deadline'] < today:
+            is_overdue = True
+        elif task['planned_date'] and task['planned_date'] < today:
+            is_overdue = True
+        tasks[i] = dict(task)
+        tasks[i]['overdue'] = is_overdue
+    
     conn.close()
     return render_template('project_detail.html', project=project, tasks=tasks)
 
@@ -210,6 +236,19 @@ def completed_tasks():
         )
         ORDER BY t.completion_date DESC, t.id DESC
     ''').fetchall()
+    
+    # Add overdue status to tasks
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
+    for i, task in enumerate(tasks):
+        is_overdue = False
+        if task['deadline'] and task['deadline'] < today:
+            is_overdue = True
+        elif task['planned_date'] and task['planned_date'] < today:
+            is_overdue = True
+        tasks[i] = dict(task)
+        tasks[i]['overdue'] = is_overdue
+    
     conn.close()
     
     return render_template('completed_tasks.html', tasks=tasks)
@@ -226,6 +265,19 @@ def all_completed_tasks():
         WHERE t.completed = 1
         ORDER BY t.completion_date DESC, t.id DESC
     ''').fetchall()
+    
+    # Add overdue status to tasks
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
+    for i, task in enumerate(tasks):
+        is_overdue = False
+        if task['deadline'] and task['deadline'] < today:
+            is_overdue = True
+        elif task['planned_date'] and task['planned_date'] < today:
+            is_overdue = True
+        tasks[i] = dict(task)
+        tasks[i]['overdue'] = is_overdue
+    
     conn.close()
     
     return render_template('completed_tasks.html', tasks=tasks, show_all=True)
@@ -242,6 +294,19 @@ def kanban():
         WHERE t.kanban_enabled = 1
         ORDER BY t.id DESC
     ''').fetchall()
+    
+    # Add overdue status to tasks
+    from datetime import date
+    today = date.today().strftime('%Y-%m-%d')
+    for i, task in enumerate(tasks):
+        is_overdue = False
+        if task['deadline'] and task['deadline'] < today:
+            is_overdue = True
+        elif task['planned_date'] and task['planned_date'] < today:
+            is_overdue = True
+        tasks[i] = dict(task)
+        tasks[i]['overdue'] = is_overdue
+    
     conn.close()
     
     return render_template('kanban.html', tasks=tasks)
