@@ -103,10 +103,10 @@ def create_task(project_id):
         planned_start_time = request.form.get('planned_start_time')
         deadline = request.form.get('deadline')
         priority = request.form.get('priority', 'Базовый')
-        show_in_calendar = bool(request.form.get('show_in_calendar'))
+        show_in_calendar = bool(request.form.get('show_in_calendar', 'on'))  # Default to True
         completed = bool(request.form.get('completed'))
         color = request.form.get('color', '#1098ad')
-        kanban_enabled = bool(request.form.get('kanban_enabled'))
+        kanban_enabled = bool(request.form.get('kanban_enabled', 'on'))  # Default to True
         kanban_status = request.form.get('kanban_status', 'Новая')
         
         completion_date = None
@@ -303,22 +303,51 @@ def calendar():
     return render_template('calendar.html', events=json.dumps(calendar_events))
 
 
+@app.route('/select_project_for_task')
+def select_project_for_task():
+    """Show project selection page for creating a task"""
+    conn = get_db_connection()
+    projects = conn.execute('SELECT * FROM projects ORDER BY name').fetchall()
+    conn.close()
+    
+    return render_template('select_project.html', projects=projects)
+
 @app.route('/create_task_from_calendar', methods=['POST'])
 def create_task_from_calendar():
     """Create a task from calendar date click"""
     data = request.get_json()
     date = data.get('date')
     
-    # Find projects to select one for the new task
+    # Redirect to project selection page with date parameter
+    redirect_url = url_for('select_project_for_task') + f'?date={date}' if date else url_for('select_project_for_task')
+    return jsonify({'redirect_url': redirect_url})
+
+@app.route('/create_task_without_project', methods=['POST'])
+def create_task_without_project():
+    """Create a task without selecting a project first (for dump project)"""
+    # Find or create dump project
     conn = get_db_connection()
-    project = conn.execute('SELECT id FROM projects LIMIT 1').fetchone()
+    dump_project = conn.execute("SELECT id FROM projects WHERE identifier = 'dump'").fetchone()
+    
+    if not dump_project:
+        # Create dump project if it doesn't exist
+        conn.execute("INSERT INTO projects (name, identifier) VALUES ('Dump', 'dump')")
+        dump_project_id = conn.execute("SELECT id FROM projects WHERE identifier = 'dump'").fetchone()[0]
+    else:
+        dump_project_id = dump_project[0]
+    
+    # Create task with default values
+    conn.execute('''
+        INSERT INTO tasks (project_id, title, description, planned_date, planned_start_time, deadline, 
+                          priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (dump_project_id, 'Quick Note', '', None, None, None, 'Базовый', True, False, None, '#1098ad', True, 'Новая'))
+    
+    task_id = conn.execute('SELECT id FROM tasks ORDER BY id DESC LIMIT 1').fetchone()[0]
+    conn.commit()
     conn.close()
     
-    if not project:
-        return jsonify({'error': 'No projects found'}), 400
-    
-    # Redirect to create task page with pre-filled date
-    return jsonify({'redirect_url': url_for('create_task', project_id=project['id'], date=date)})
+    return jsonify({'redirect_url': url_for('edit_task', task_id=task_id)})
 
 @app.route('/api/tasks')
 def api_tasks():
@@ -351,6 +380,21 @@ def update_kanban_status():
     
     return jsonify({'success': True})
 
+@app.route('/api/update_task_visibility', methods=['POST'])
+def update_task_visibility():
+    data = request.get_json()
+    task_id = data.get('task_id')
+    show_in_calendar = data.get('show_in_calendar')
+    kanban_enabled = data.get('kanban_enabled')
+    
+    conn = get_db_connection()
+    conn.execute('UPDATE tasks SET show_in_calendar = ?, kanban_enabled = ? WHERE id = ?', 
+                 (show_in_calendar, kanban_enabled, task_id))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True})
+
 @app.route('/api/toggle_task_completed', methods=['POST'])
 def toggle_task_completed():
     data = request.get_json()
@@ -369,6 +413,33 @@ def toggle_task_completed():
     conn.close()
     
     return jsonify({'success': True})
+
+@app.route('/api/move_task_to_project', methods=['POST'])
+def move_task_to_project():
+    data = request.get_json()
+    task_id = data.get('task_id')
+    project_id = data.get('project_id')
+    
+    if not task_id or not project_id:
+        return jsonify({'error': 'Missing task_id or project_id'}), 400
+    
+    try:
+        conn = get_db_connection()
+        
+        # Check if project exists
+        project = conn.execute('SELECT id FROM projects WHERE id = ?', (project_id,)).fetchone()
+        if not project:
+            return jsonify({'error': 'Project not found'}), 404
+        
+        # Update task's project
+        conn.execute('UPDATE tasks SET project_id = ? WHERE id = ?', (project_id, task_id))
+        conn.commit()
+        conn.close()
+        
+        return jsonify({'success': True})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     init_db()

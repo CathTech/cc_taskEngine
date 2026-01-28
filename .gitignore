@@ -1,38 +1,76 @@
-```
-# Compiled and build artifacts
-*.pyc
+```gitignore
+# Python
 __pycache__/
-*.o
-*.obj
-*.so
-*.dll
-*.exe
-*.class
-*.out
-
-# Dependencies
-.venv/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
 venv/
-.env
-.env.local
-*.env.*
-
-# Logs and temp files
+.venv/
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
 *.log
-*.tmp
-*.swp
+.DS_Store
+*.sqlite3
+*.sqlite3-journal
+Thumbs.db
+ehthumbs.db
+Icon?
+.directory
+.folders~
+metadata.json
+*.sublime-workspace
+.pytest_cache/
+.mypy_cache/
+.hypothesis/
 
-# Editors
+# Web
+node_modules/
+.sass-cache/
+.npm
+.yarn-integrity
+.yarn-metadata.json
+node_modules/
+jspm_packages/
+bower_components/
+*.min.js
+*.min.css
+coverage/
+lib-cov/
+
+# IDE
 .vscode/
 .idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
 
-# Coverage reports
-.coverage
-coverage/
-htmlcov/
+# Environment
+.env
+.env.local
+.env.*
+!.env.example
 
-# Build directories
+# Build and distribution
 dist/
 build/
-target/
+*.egg-info/
+.eggs/
+.installed.cfg
+develop-eggs/
+parts/
+sdist/
+var/
+wheels/
+*.egg
 ```

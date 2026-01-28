@@ -121,6 +121,7 @@
                         
                         <div class="d-grid gap-2 d-md-flex justify-content-md-end">
                             <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-secondary me-md-2">Отменить</a>
+                            <a href="#" class="btn btn-info me-md-2" data-bs-toggle="modal" data-bs-target="#moveToProjectModal">Добавить в проект</a>
                             <button type="submit" class="btn btn-primary">Сохранить изменения</button>
                         </div>
                     </form>
@@ -128,7 +129,75 @@
             </div>
         </div>
     </div>
+
+    <!-- Modal for moving task to another project -->
+    <div class="modal fade" id="moveToProjectModal" tabindex="-1" aria-labelledby="moveToProjectModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="moveToProjectModalLabel">Переместить задачу в проект</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="moveTaskForm">
+                        <div class="mb-3">
+                            <label for="targetProject" class="form-label">Выберите проект</label>
+                            <select class="form-select" id="targetProject" name="target_project">
+                                {% for project in all_projects %}
+                                    <option value="{{ project.id }}" {% if project.id == task.project_id %}selected{% endif %}>{{ project.name }} ({{ project.identifier }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                    <button type="button" class="btn btn-primary" id="moveTaskBtn">Переместить задачу</button>
+                </div>
+            </div>
+        </div>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const moveTaskBtn = document.getElementById('moveTaskBtn');
+            const taskId = {{ task.id }};
+            
+            moveTaskBtn.addEventListener('click', function() {
+                const targetProjectId = document.getElementById('targetProject').value;
+                
+                // Send AJAX request to move task to another project
+                fetch('/api/move_task_to_project', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_id: taskId,
+                        project_id: parseInt(targetProjectId)
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Close modal and reload page
+                        const modal = bootstrap.Modal.getInstance(document.getElementById('moveToProjectModal'));
+                        modal.hide();
+                        
+                        // Show success message and reload
+                        alert('Задача успешно перемещена в проект!');
+                        location.reload();
+                    } else {
+                        alert('Ошибка перемещения задачи: ' + (data.error || 'Неизвестная ошибка'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Ошибка соединения: ' + error.message);
+                });
+            });
+        });
+    </script>
 </body>
 </html>
