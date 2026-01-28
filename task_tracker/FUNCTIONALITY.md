@@ -39,7 +39,10 @@ Buttons: "Save" and "Cancel"
 
 ## Database Schema
 - **Projects Table**: Stores project information (id, name, identifier)
-- **Tasks Table**: Stores task information (id, project_id, title, description, planned_date, deadline, priority, show_in_calendar, completed, completion_date)
+- **Tasks Table**: Stores task information (id, project_id, title, description, planned_date, planned_start_time, deadline, priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status)
+
+## Database Update Script
+- **update_db.py**: Script to safely update the database schema with new fields required for the latest functionality without affecting existing data
 
 ## Technology Stack
 - **Backend**: Python Flask
@@ -62,7 +65,10 @@ task_tracker/
 │   ├── edit_task.html
 │   └── calendar.html
 ├── requirements.txt    # Python dependencies
-└── run.py             # Startup script
+├── run.py             # Startup script
+├── init_db.py         # Database initialization script
+├── update_db.py       # Database update script for new functionality
+└── tasks.db           # SQLite database file (created on first run)
 ```
 
 ## How to Run
