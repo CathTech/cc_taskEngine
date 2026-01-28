@@ -28,7 +28,7 @@ def index():
     conn = get_db_connection()
     # Get non-completed tasks sorted from newest to oldest (by ID)
     tasks = conn.execute('''
-        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         WHERE t.completed = 0
@@ -57,14 +57,20 @@ def project_detail(project_id):
 def task_detail(task_id):
     conn = get_db_connection()
     task = conn.execute('''
-        SELECT t.*, p.identifier as project_identifier 
+        SELECT t.*, p.identifier as project_identifier, p.name as project_name, p.responsible as project_responsible 
         FROM tasks t 
         JOIN projects p ON t.project_id = p.id 
         WHERE t.id = ?
     ''', (task_id,)).fetchone()
     
-    # Generate task ID (project identifier + task number)
-    task_id_display = f"{task['project_identifier']}-{task['id']}"
+    # Calculate task number within project (count of tasks in project with ID <= current task ID)
+    task_number_in_project = conn.execute(
+        'SELECT COUNT(*) FROM tasks WHERE project_id = ? AND id <= ?', 
+        (task['project_id'], task_id)
+    ).fetchone()[0]
+    
+    # Generate task ID (project identifier + task number in project)
+    task_id_display = f"{task['project_identifier']}-{task_number_in_project}"
     
     conn.close()
     return render_template('task_detail.html', task=task, task_id_display=task_id_display)
@@ -74,10 +80,11 @@ def create_project():
     if request.method == 'POST':
         name = request.form['name']
         identifier = request.form['identifier']
+        responsible = request.form.get('responsible', '')
         
         conn = get_db_connection()
         try:
-            conn.execute('INSERT INTO projects (name, identifier) VALUES (?, ?)', (name, identifier))
+            conn.execute('INSERT INTO projects (name, identifier, responsible) VALUES (?, ?, ?)', (name, identifier, responsible))
             conn.commit()
         except sqlite3.IntegrityError:
             conn.close()
@@ -108,6 +115,7 @@ def create_task(project_id):
         color = request.form.get('color', '#1098ad')
         kanban_enabled = bool(request.form.get('kanban_enabled', 'on'))  # Default to True
         kanban_status = request.form.get('kanban_status', 'Новая')
+        responsible = request.form.get('responsible', '')
         
         completion_date = None
         if completed:
@@ -115,10 +123,10 @@ def create_task(project_id):
         
         conn.execute('''
             INSERT INTO tasks (project_id, title, description, planned_date, planned_start_time, deadline, 
-                              priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                              priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status, responsible)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ''', (project_id, title, description, planned_date, planned_start_time, deadline, 
-              priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status))
+              priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status, responsible))
         conn.commit()
         conn.close()
         
@@ -131,7 +139,7 @@ def create_task(project_id):
 def edit_task(task_id):
     conn = get_db_connection()
     task = conn.execute('''
-        SELECT t.*, p.identifier as project_identifier 
+        SELECT t.*, p.identifier as project_identifier, p.responsible as project_responsible 
         FROM tasks t 
         JOIN projects p ON t.project_id = p.id 
         WHERE t.id = ?
@@ -152,6 +160,7 @@ def edit_task(task_id):
         color = request.form.get('color', '#1098ad')
         kanban_enabled = bool(request.form.get('kanban_enabled'))
         kanban_status = request.form.get('kanban_status', 'Новая')
+        responsible = request.form.get('responsible', '')
         
         completion_date = None
         if completed and not task['completion_date']:
@@ -166,17 +175,23 @@ def edit_task(task_id):
         
         conn.execute('''
             UPDATE tasks SET title=?, description=?, planned_date=?, planned_start_time=?, deadline=?, 
-                          priority=?, show_in_calendar=?, completed=?, completion_date=?, color=?, kanban_enabled=?, kanban_status=?
+                          priority=?, show_in_calendar=?, completed=?, completion_date=?, color=?, kanban_enabled=?, kanban_status=?, responsible=?
             WHERE id = ?
         ''', (title, description, planned_date, planned_start_time, deadline, priority, 
-              show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status, task_id))
+              show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status, responsible, task_id))
         conn.commit()
         conn.close()
         
         return redirect(url_for('task_detail', task_id=task_id))
     
+    # Calculate task number within project (count of tasks in project with ID <= current task ID)
+    task_number_in_project = conn.execute(
+        'SELECT COUNT(*) FROM tasks WHERE project_id = ? AND id <= ?', 
+        (task['project_id'], task_id)
+    ).fetchone()[0]
+
     # Generate task ID for display
-    task_id_display = f"{task['project_identifier']}-{task['id']}"
+    task_id_display = f"{task['project_identifier']}-{task_number_in_project}"
     conn.close()
     return render_template('edit_task.html', task=task, task_id_display=task_id_display, all_projects=all_projects)
 
@@ -185,7 +200,7 @@ def completed_tasks():
     conn = get_db_connection()
     # Get completed tasks that were completed less than a week ago
     tasks = conn.execute('''
-        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         WHERE t.completed = 1 
@@ -205,7 +220,7 @@ def all_completed_tasks():
     """Show all completed tasks including those completed more than a week ago"""
     conn = get_db_connection()
     tasks = conn.execute('''
-        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         WHERE t.completed = 1
@@ -221,7 +236,7 @@ def kanban():
     conn = get_db_connection()
     # Get all tasks that have Kanban enabled
     tasks = conn.execute('''
-        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         WHERE t.kanban_enabled = 1
@@ -238,7 +253,7 @@ def calendar():
     # Get tasks that should appear in calendar (either planned or deadline dates)
     # Order by planned date/time, prioritizing tasks with time over those without time
     tasks = conn.execute('''
-        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
         WHERE t.show_in_calendar = 1 AND (t.planned_date IS NOT NULL OR t.deadline IS NOT NULL)
@@ -334,7 +349,7 @@ def create_task_without_project():
     
     if not dump_project:
         # Create dump project if it doesn't exist
-        conn.execute("INSERT INTO projects (name, identifier) VALUES ('Dump', 'dump')")
+        conn.execute("INSERT INTO projects (name, identifier, responsible) VALUES ('Dump', 'dump', '')")
         dump_project_id = conn.execute("SELECT id FROM projects WHERE identifier = 'dump'").fetchone()[0]
     else:
         dump_project_id = dump_project[0]
@@ -342,9 +357,9 @@ def create_task_without_project():
     # Create task with default values
     conn.execute('''
         INSERT INTO tasks (project_id, title, description, planned_date, planned_start_time, deadline, 
-                          priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ''', (dump_project_id, 'Quick Note', '', None, None, None, 'Базовый', True, False, None, '#1098ad', True, 'Новая'))
+                          priority, show_in_calendar, completed, completion_date, color, kanban_enabled, kanban_status, responsible)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ''', (dump_project_id, 'Quick Note', '', None, None, None, 'Базовый', True, False, None, '#1098ad', True, 'Новая', ''))
     
     task_id = conn.execute('SELECT id FROM tasks ORDER BY id DESC LIMIT 1').fetchone()[0]
     conn.commit()
@@ -360,7 +375,7 @@ def create_task_without_project():
 def api_tasks():
     conn = get_db_connection()
     tasks = conn.execute('''
-        SELECT t.*, p.name as project_name, p.identifier as project_identifier
+        SELECT t.*, p.name as project_name, p.identifier as project_identifier, p.responsible as project_responsible
         FROM tasks t
         JOIN projects p ON t.project_id = p.id
     ''').fetchall()

@@ -11,7 +11,8 @@ def init_database():
         CREATE TABLE IF NOT EXISTS projects (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
-            identifier TEXT UNIQUE NOT NULL
+            identifier TEXT UNIQUE NOT NULL,
+            responsible TEXT
         )
     ''')
     
@@ -26,12 +27,13 @@ def init_database():
             planned_start_time TIME,
             deadline DATE,
             priority TEXT DEFAULT 'Базовый',
-            show_in_calendar BOOLEAN DEFAULT 0,
+            show_in_calendar BOOLEAN DEFAULT 1,
             completed BOOLEAN DEFAULT 0,
             completion_date DATE,
             color TEXT DEFAULT '#1098ad',
-            kanban_enabled BOOLEAN DEFAULT 0,
+            kanban_enabled BOOLEAN DEFAULT 1,
             kanban_status TEXT DEFAULT 'Новая',
+            responsible TEXT,
             FOREIGN KEY (project_id) REFERENCES projects (id)
         )
     ''')
