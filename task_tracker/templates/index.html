@@ -310,11 +310,9 @@
                     events: {{ events | safe }},  // Use events passed from backend
                     height: 400,
                     eventClick: function(info) {
-                        // Handle click on calendar event
+                        // Handle click on calendar event - open in modal
                         const taskId = info.event.extendedProps.taskId;
-                        
-                        // Navigate to the task detail page
-                        window.location.href = '/task/' + taskId;
+                        loadTaskDetails(taskId);
                     }
                 });
                 
@@ -335,7 +333,7 @@
                     }
                     
                     const taskId = this.dataset.taskId;
-                    window.location.href = '/task/' + taskId;
+                    loadTaskDetails(taskId);
                 });
             });
 
@@ -419,6 +417,95 @@
                     console.error('Error updating task status:', error);
                 });
             }
+            
+            // Function to load task details into modal
+            function loadTaskDetails(taskId) {
+                fetch(`/api/task/${taskId}`)
+                    .then(response => response.json())
+                    .then(taskData => {
+                        // Populate modal with task details
+                        document.getElementById('modal-task-title').textContent = taskData.title;
+                        document.getElementById('modal-task-id').textContent = `[${taskData.project_identifier}-${taskData.id}]`;
+                        document.getElementById('modal-task-description').textContent = taskData.description || '-';
+                        document.getElementById('modal-task-planned-date').textContent = taskData.planned_date || '-';
+                        document.getElementById('modal-task-deadline').textContent = taskData.deadline || '-';
+                        document.getElementById('modal-task-priority').innerHTML = `
+                            <span class="badge 
+                                ${taskData.priority === 'Срочный' ? 'bg-danger' :
+                                  taskData.priority === 'Важный' ? 'bg-warning text-dark' :
+                                  taskData.priority === 'Базовый' ? 'bg-primary' :
+                                  taskData.priority === 'Низкий' ? 'bg-secondary' : 'bg-info'}
+                            ">${taskData.priority}</span>
+                        `;
+                        document.getElementById('modal-task-status').textContent = taskData.kanban_status || 'Не указан';
+                        document.getElementById('modal-task-project').textContent = `${taskData.project_name} (${taskData.project_identifier})`;
+                        
+                        // Set completion status and button state
+                        const completedCheckbox = document.getElementById('modal-task-completed');
+                        completedCheckbox.checked = taskData.completed;
+                        
+                        // Update the completed button text
+                        const completedBtn = document.getElementById('toggle-completed-btn');
+                        if (taskData.completed) {
+                            completedBtn.className = 'btn btn-success btn-sm';
+                            completedBtn.textContent = 'Выполнено ✓';
+                        } else {
+                            completedBtn.className = 'btn btn-outline-secondary btn-sm';
+                            completedBtn.textContent = 'Выполнить';
+                        }
+                        
+                        // Store task ID in modal for later use
+                        document.getElementById('task-modal').dataset.taskId = taskData.id;
+                        
+                        // Show the modal
+                        const modal = new bootstrap.Modal(document.getElementById('task-modal'));
+                        modal.show();
+                    })
+                    .catch(error => {
+                        console.error('Error loading task details:', error);
+                        alert('Ошибка загрузки деталей задачи');
+                    });
+            }
+            
+            // Handle completion button click
+            document.getElementById('toggle-completed-btn').addEventListener('click', function() {
+                const taskId = document.getElementById('task-modal').dataset.taskId;
+                const isCompleted = document.getElementById('modal-task-completed').checked;
+                
+                fetch('/api/toggle_task_completed', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        task_id: parseInt(taskId),
+                        completed: !isCompleted
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Update checkbox and button
+                        const checkbox = document.getElementById('modal-task-completed');
+                        checkbox.checked = !isCompleted;
+                        
+                        const completedBtn = document.getElementById('toggle-completed-btn');
+                        if (!isCompleted) { // Task is now completed
+                            completedBtn.className = 'btn btn-success btn-sm';
+                            completedBtn.textContent = 'Выполнено ✓';
+                        } else { // Task is now incomplete
+                            completedBtn.className = 'btn btn-outline-secondary btn-sm';
+                            completedBtn.textContent = 'Выполнить';
+                        }
+                    } else {
+                        alert('Ошибка обновления статуса задачи');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating task completion:', error);
+                    alert('Ошибка обновления статуса задачи');
+                });
+            });
         });
     </script>
     
@@ -427,6 +514,77 @@
         <button onclick="createQuickTask()" class="btn btn-success btn-lg rounded-circle shadow-lg" style="width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;" title="Быстрая задача">
             +
         </button>
+    </div>
+    
+    <!-- Task Detail Modal -->
+    <div class="modal fade" id="task-modal" tabindex="-1" aria-labelledby="task-modal-label" aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="task-modal-label">
+                        <span id="modal-task-id"></span> 
+                        <span id="modal-task-title"></span>
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h6>Описание</h6>
+                            <p id="modal-task-description" class="text-muted"></p>
+                            
+                            <h6>Детали задачи</h6>
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="30%"><strong>Запланировано на:</strong></td>
+                                    <td id="modal-task-planned-date"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Дедлайн:</strong></td>
+                                    <td id="modal-task-deadline"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Приоритет:</strong></td>
+                                    <td id="modal-task-priority"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Статус в Kanban:</strong></td>
+                                    <td id="modal-task-status"></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Проект:</strong></td>
+                                    <td id="modal-task-project"></td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h6>Статус</h6>
+                                    <div class="form-check mb-3">
+                                        <input class="form-check-input" type="checkbox" id="modal-task-completed" disabled>
+                                        <label class="form-check-label" for="modal-task-completed">
+                                            Выполнено
+                                        </label>
+                                    </div>
+                                    
+                                    <button id="toggle-completed-btn" class="btn btn-outline-secondary btn-sm w-100 mb-2">
+                                        Выполнить
+                                    </button>
+                                    
+                                    <a id="open-task-link" class="btn btn-primary btn-sm w-100" target="_blank">
+                                        Открыть задачу
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Закрыть</button>
+                </div>
+            </div>
+        </div>
     </div>
     
     <script>
@@ -452,6 +610,12 @@
                 window.location.href = '{{ url_for('create_task_without_project') }}';
             });
         }
+        
+        // Update the open task link when modal is shown
+        document.getElementById('task-modal').addEventListener('shown.bs.modal', function () {
+            const taskId = this.dataset.taskId;
+            document.getElementById('open-task-link').href = `/task/${taskId}`;
+        });
     </script>
 </body>
 </html>
