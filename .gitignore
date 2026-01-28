@@ -1,53 +1,56 @@
 ```
-# Dependencies
-.venv/
-venv/
+# Python
 __pycache__/
-
-# Logs and temp files
-*.log
-*.tmp
-*.swp
-
-# Environment
-.env
-.env.local
-*.env.*
-
-# Editors
-.vscode/
-.idea/
-
-# Python specific
 *.pyc
 *.pyo
 *.pyd
-*.py~
-*.py.class
-*.py.backup
-*.py.swp
-*.py.swo
-*.py~*
-*.py.bak
-*.py.orig
-*.py.rej
-*.py.patch
-*.py.diff
-*.py.log
-*.py.tmp
-*.py.swx
-*.py.swn
-*.py.swp
-*.py.swo
-*.py.swm
-*.py.swl
-*.py.swt
-*.py.swk
-*.py.swg
-*.py.swf
-*.py.swe
-*.py.swd
-*.py.swc
-*.py.swb
-*.py.swa
+.Python
+env/
+venv/
+.venv/
+.ENV
+.ENV.local
+.python-version
+.pytest_cache/
+.mypy_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.coverage
+coverage/
+htmlcov/
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 ```
