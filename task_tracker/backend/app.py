@@ -596,6 +596,26 @@ def api_calendar_events():
     
     return jsonify(calendar_events)
 
+@app.route('/api/task/<int:task_id>')
+def api_task_details(task_id):
+    """API endpoint to get details of a specific task"""
+    conn = get_db_connection()
+    task = conn.execute('''
+        SELECT t.*, p.identifier as project_identifier, p.name as project_name, p.responsible as project_responsible 
+        FROM tasks t 
+        JOIN projects p ON t.project_id = p.id 
+        WHERE t.id = ?
+    ''', (task_id,)).fetchone()
+    
+    conn.close()
+    
+    if task:
+        task_dict = dict(task)
+        return jsonify(task_dict)
+    else:
+        return jsonify({'error': 'Task not found'}), 404
+
+
 @app.route('/api/update_kanban_status', methods=['POST'])
 def update_kanban_status():
     data = request.get_json()
