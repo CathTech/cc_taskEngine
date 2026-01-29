@@ -211,75 +211,52 @@
                     // Handle when a task is dropped from outside the calendar
                     console.log('Event received:', info);
                     
-                    // Open edit task modal with the selected date/time
-                    const taskId = info.event.extendedProps.taskId; // This will be the task ID
+                    // Extract the date from the event
+                    const taskId = info.event.extendedProps.taskId;
                     const eventDate = info.event.start;
                     
-                    // Redirect to edit task page with the new date
-                    window.location.href = `/edit_task/${taskId}`;
+                    // Format date as YYYY-MM-DD
+                    const dateStr = eventDate.toISOString().split('T')[0];
+                    
+                    // Update the task with the new planned date via API
+                    fetch('/api/update_task_datetime', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            task_id: parseInt(taskId),
+                            planned_date: dateStr
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Задача успешно добавлена в календарь');
+                            
+                            // Update the event in the calendar with the new task information
+                            info.event.setProp('title', `[${data.task.project_identifier}-${data.task.id}] ${data.task.title}`);
+                        } else {
+                            console.error('Error updating task:', data.error);
+                            showNotification('Ошибка при обновлении задачи: ' + data.error);
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating task datetime:', error);
+                        showNotification('Ошибка при обновлении задачи');
+                    });
                 },
                 // Add a custom drop handler for external elements
                 drop: function(info) {
                     console.log('Drop on calendar:', info);
-                }
-            });
-            
-            calendar.render();
-            
-            // Make calendar accept external draggables
-            // We need to initialize the external drag functionality
-            initExternalDrag(calendar);
-        });
-        
-        // Function to handle external drag and drop
-        function initExternalDrag(calendar) {
-            // This will handle the drop of tasks from kanban to calendar
-            const calendarEl = document.getElementById('calendar');
-            
-            // Add dragover listener to highlight drop area
-            calendarEl.addEventListener('dragover', function(e) {
-                e.preventDefault(); // Necessary to allow drop
-                this.classList.add('drag-over-calendar');
-                
-                // Create and show a time indicator line on the calendar
-                showTimeIndicator(e.clientY);
-            });
-            
-            calendarEl.addEventListener('dragleave', function(e) {
-                this.classList.remove('drag-over-calendar');
-                
-                // Remove the time indicator line
-                hideTimeIndicator();
-            });
-            
-            calendarEl.addEventListener('drop', function(e) {
-                e.preventDefault();
-                this.classList.remove('drag-over-calendar');
-                
-                // Remove the time indicator line
-                hideTimeIndicator();
-                
-                // Get the task ID from the dragged element
-                const taskId = e.dataTransfer.getData('text/plain');
-                
-                if (taskId) {
-                    // Determine the date and time where the task was dropped
-                    // Calculate the date based on the calendar view and position
-                    const rect = this.getBoundingClientRect();
-                    const y = e.clientY - rect.top;
                     
-                    // Calculate the time based on the vertical position
-                    const time = calculateTimeFromPosition(y, rect);
-                    
-                    // Determine the date by finding which date column the drop occurred in
-                    // This is complex with FullCalendar, so we'll use the current view's start date
-                    // as a reference and estimate the date based on horizontal position
-                    const date = getDateFromPosition(e.clientX, calendar);
-                    
-                    if (date && time) {
-                        const dateString = date.toISOString().split('T')[0];
+                    // Get the task ID from the drag event
+                    const taskId = info.draggedEl.getAttribute('data-task-id');
+                    if (taskId) {
+                        // Determine the date where the task was dropped
+                        const dropDate = info.date.toISOString().split('T')[0];
                         
-                        // Update the task's planned date and time via API
+                        // Update the task with the new planned date via API
                         fetch('/api/update_task_datetime', {
                             method: 'POST',
                             headers: {
@@ -287,69 +264,104 @@
                             },
                             body: JSON.stringify({
                                 task_id: parseInt(taskId),
-                                planned_date: dateString,
-                                planned_time: time
+                                planned_date: dropDate
                             })
                         })
                         .then(response => response.json())
                         .then(data => {
                             if (data.success) {
-                                // Show a temporary notification
-                                showNotification(`Задача запланирована на ${dateString} ${time}`);
+                                showNotification('Задача успешно добавлена в календарь');
                                 
-                                // Reload the calendar to reflect the changes
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 1000); // Delay to allow user to see the notification
+                                // Add the task as a new event in the calendar
+                                const newEvent = {
+                                    id: data.task.id,
+                                    title: `[${data.task.project_identifier}-${data.task.id}] ${data.task.title}`,
+                                    start: dropDate,
+                                    extendedProps: {
+                                        taskId: data.task.id,
+                                        projectId: data.task.project_id,
+                                        description: data.task.description,
+                                        priority: data.task.priority,
+                                        completed: data.task.completed,
+                                        color: data.task.color
+                                    }
+                                };
+                                
+                                calendar.addEvent(newEvent);
                             } else {
                                 console.error('Error updating task:', data.error);
-                                alert('Ошибка обновления задачи: ' + (data.error || 'Неизвестная ошибка'));
+                                showNotification('Ошибка при обновлении задачи: ' + data.error);
                             }
                         })
                         .catch(error => {
-                            console.error('Error updating task:', error);
-                            alert('Ошибка соединения при обновлении задачи');
-                        });
-                    } else {
-                        // Fallback to current date if we can't determine the date from position
-                        const today = new Date();
-                        const dateString = today.toISOString().split('T')[0];
-                        const time = '12:00'; // Default to noon
-                        
-                        // Update the task's planned date and time via API
-                        fetch('/api/update_task_datetime', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                task_id: parseInt(taskId),
-                                planned_date: dateString,
-                                planned_time: time
-                            })
-                        })
-                        .then(response => response.json())
-                        .then(data => {
-                            if (data.success) {
-                                // Show a temporary notification
-                                showNotification(`Задача запланирована на ${dateString} ${time}`);
-                                
-                                // Reload the calendar to reflect the changes
-                                setTimeout(() => {
-                                    location.reload();
-                                }, 1000); // Delay to allow user to see the notification
-                            } else {
-                                console.error('Error updating task:', data.error);
-                                alert('Ошибка обновления задачи: ' + (data.error || 'Неизвестная ошибка'));
-                            }
-                        })
-                        .catch(error => {
-                            console.error('Error updating task:', error);
-                            alert('Ошибка соединения при обновлении задачи');
+                            console.error('Error updating task datetime:', error);
+                            showNotification('Ошибка при обновлении задачи');
                         });
                     }
                 }
             });
+            
+            // Initialize external drag functionality for tasks from kanban
+            initExternalDrag(calendar);
+            
+            calendar.render();
+        });
+        
+        // Function to handle external drag and drop
+        function initExternalDrag(calendar) {
+            // Wait for a short delay to allow other scripts to load
+            setTimeout(function() {
+                // Try to initialize drag from other sources like kanban
+                setupExternalDragSources();
+                
+                // Also set up a MutationObserver to handle dynamically added elements
+                const observer = new MutationObserver(function(mutations) {
+                    mutations.forEach(function(mutation) {
+                        mutation.addedNodes.forEach(function(node) {
+                            if (node.nodeType === 1) { // Element node
+                                if (node.classList && node.classList.contains('kanban-task')) {
+                                    makeDraggable(node);
+                                } else if (node.querySelectorAll) {
+                                    const tasks = node.querySelectorAll('.kanban-task');
+                                    tasks.forEach(makeDraggable);
+                                }
+                            }
+                        });
+                    });
+                });
+                
+                observer.observe(document.body, {
+                    childList: true,
+                    subtree: true
+                });
+            }, 500);
+            
+            function setupExternalDragSources() {
+                // Look for kanban tasks on the page (might be in an iframe or loaded separately)
+                const kanbanTasks = document.querySelectorAll('.kanban-task');
+                kanbanTasks.forEach(makeDraggable);
+            }
+            
+            function makeDraggable(task) {
+                if (task.hasAttribute('data-calendar-initialized')) return;
+                
+                task.setAttribute('data-calendar-initialized', 'true');
+                task.setAttribute('draggable', 'true');
+                
+                task.addEventListener('dragstart', function(event) {
+                    // Set the task ID as the data to transfer
+                    event.dataTransfer.setData('text/plain', this.dataset.taskId);
+                    event.dataTransfer.effectAllowed = 'move';
+                    
+                    // Add visual feedback
+                    this.classList.add('dragging');
+                });
+                
+                task.addEventListener('dragend', function() {
+                    // Remove visual feedback
+                    this.classList.remove('dragging');
+                });
+            }
         }
         
         // Helper function to show time indicator line

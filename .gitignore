@@ -1,36 +1,9 @@
-```
 # Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
-env/
-venv/
-.venv/
-.ENV
-.ENV.local
-.env
-.env.local
-.env.*
-.env~*
-requirements.txt.bak
-pip-log.txt
-pip-delete-this-directory.txt
-.tox/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
-*.cover
-*.log
-.git/modules/
-.pytest_cache/
-.mypy_cache/
-.hypothesis/
-
-# Build artifacts
 build/
 develop-eggs/
 dist/
@@ -47,14 +20,73 @@ wheels/
 .installed.cfg
 *.egg
 
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.env/
+
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-*~
 
 # OS
 .DS_Store
 Thumbs.db
-```
+
+# Logs
+*.log
+
+# Coverage
+.coverage
+coverage/
+htmlcov/
+
+# Environment
+.env
+.env.local
+*.env.*
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pytest
+.pytest_cache/
+
+# Django/Flask
+*.sqlite3
+*.sqlite3-journal
+media/
+staticfiles/
+.envrc
+
+# Project specific build artifacts
+task_tracker/static/CACHE/
+task_tracker/media/
+
+# Compressed files
+*.zip
+*.tar.gz
+*.tgz
+*.tar.bz2
+*.tar.xz
+*.gz
+*.bz2
+*.xz
+*.7z
+*.rar
+*.zst
+*.lz4
+*.lzh
+*.cab
+*.arj
+*.rpm
+*.deb
+*.Z
+*.lz
+*.lzo
