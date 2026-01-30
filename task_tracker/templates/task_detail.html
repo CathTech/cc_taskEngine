@@ -179,6 +179,9 @@
                         <h4>Действия</h4>
                     </div>
                     <div class="card-body">
+                        <button id="toggle-completed-btn" class="btn {% if task.completed %}btn-success{% else %}btn-outline-secondary{% endif %} w-100 mb-2">
+                            {% if task.completed %}Выполнено ✓{% else %}Выполнить{% endif %}
+                        </button>
                         <a href="{{ url_for('edit_task', task_id=task.id) }}" class="btn btn-primary w-100 mb-2">Редактировать</a>
                         <a href="{{ url_for('project_detail', project_id=task.project_id) }}" class="btn btn-secondary w-100 mb-2">К проекту</a>
                         <a href="{{ url_for('calendar') }}" class="btn btn-info w-100 mb-2">Календарь</a>
@@ -295,6 +298,55 @@
                     alert('Ошибка при получении ссылки');
                 });
         }
+
+        // Handle completion button click
+        document.getElementById('toggle-completed-btn').addEventListener('click', function() {
+            const taskId = {{ task.id }};
+            const isCompleted = {{ task.completed | lower }};
+            
+            fetch('/api/toggle_task_completed', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    task_id: taskId,
+                    completed: !isCompleted
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Update the button appearance
+                    const completedBtn = document.getElementById('toggle-completed-btn');
+                    if (!isCompleted) { // Task is now completed
+                        completedBtn.className = 'btn btn-success w-100 mb-2';
+                        completedBtn.textContent = 'Выполнено ✓';
+                        
+                        // Update the status badge
+                        document.querySelector('.badge.bg-secondary').className = 'badge bg-success';
+                        document.querySelector('.badge.bg-success').textContent = 'Выполнено';
+                        document.querySelector('.badge.bg-success').insertAdjacentHTML('afterend', `<span class=\"ms-2\">(${new Date().toISOString().split('T')[0]})</span>`);
+                    } else { // Task is now incomplete
+                        completedBtn.className = 'btn btn-outline-secondary w-100 mb-2';
+                        completedBtn.textContent = 'Выполнить';
+                        
+                        // Update the status badge
+                        document.querySelector('.badge.bg-success').className = 'badge bg-secondary';
+                        document.querySelector('.badge.bg-secondary').textContent = 'Не выполнено';
+                    }
+                    
+                    // Change the background color of the entire page to reflect the task status
+                    document.body.style.backgroundColor = !isCompleted ? '#cccccc' : '#f5f5f5';
+                } else {
+                    alert('Ошибка обновления статуса задачи');
+                }
+            })
+            .catch(error => {
+                console.error('Error updating task completion:', error);
+                alert('Ошибка обновления статуса задачи');
+            });
+        });
     </script>
 </body>
 </html>
