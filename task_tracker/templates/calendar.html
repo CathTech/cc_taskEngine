@@ -48,6 +48,10 @@
         
         <div class="card">
             <div class="card-body">
+                <div class="project-filters mb-3">
+                    <button class="btn btn-outline-primary project-filter-btn active" data-project="all">Все</button>
+                    <!-- Project filter buttons will be added here dynamically -->
+                </div>
                 <div id="calendar"></div>
             </div>
         </div>
@@ -205,6 +209,54 @@
                     // Add tooltip to events
                     info.el.setAttribute('title', info.event.title);
                 },
+                // Enable event dragging within the calendar
+                editable: true,
+                eventDrop: function(info) {
+                    // Handle moving an event to a new date/time
+                    const taskId = info.event.extendedProps.taskId;
+                    const newDate = info.event.start;
+                    
+                    // Format date as YYYY-MM-DD
+                    const dateStr = newDate.toISOString().split('T')[0];
+                    let timeStr = null;
+                    
+                    // Extract time if it's a timed event
+                    if (info.event.start) {
+                        timeStr = newDate.toTimeString().substring(0, 5); // HH:MM format
+                    }
+                    
+                    // Update the task with the new planned date/time via API
+                    fetch('/api/update_task_datetime', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            task_id: parseInt(taskId),
+                            planned_date: dateStr,
+                            planned_time: timeStr
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            showNotification('Задача успешно перемещена');
+                        } else {
+                            console.error('Error updating task:', data.error);
+                            showNotification('Ошибка при обновлении задачи: ' + data.error);
+                            
+                            // Revert the event to its original position
+                            info.revert();
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error updating task datetime:', error);
+                        showNotification('Ошибка при обновлении задачи');
+                        
+                        // Revert the event to its original position
+                        info.revert();
+                    });
+                },
                 // Enable external drag-and-drop
                 droppable: true,
                 eventReceive: function(info) {
@@ -304,8 +356,77 @@
             // Initialize external drag functionality for tasks from kanban
             initExternalDrag(calendar);
             
+            // Load projects and create filter buttons
+            loadProjectsAndCreateFilters(calendar);
+            
             calendar.render();
         });
+        
+        // Function to load projects and create filter buttons
+        function loadProjectsAndCreateFilters(calendar) {
+            fetch('/api/projects')
+                .then(response => response.json())
+                .then(projects => {
+                    const filtersContainer = document.querySelector('.project-filters');
+                    
+                    // Clear existing project filter buttons (keep the 'All' button)
+                    const allBtn = document.querySelector('[data-project="all"]');
+                    filtersContainer.innerHTML = '';
+                    filtersContainer.appendChild(allBtn);
+                    
+                    // Add a button for each project
+                    projects.forEach(project => {
+                        const btn = document.createElement('button');
+                        btn.className = 'btn btn-outline-secondary project-filter-btn mx-1';
+                        btn.setAttribute('data-project', project.id);
+                        btn.textContent = project.name;
+                        btn.addEventListener('click', function() {
+                            // Toggle active state
+                            document.querySelectorAll('.project-filter-btn').forEach(b => {
+                                b.classList.remove('active');
+                            });
+                            this.classList.add('active');
+                            
+                            // Filter calendar events
+                            filterCalendarByProject(calendar, project.id);
+                        });
+                        filtersContainer.appendChild(btn);
+                    });
+                    
+                    // Add event listener for 'All' button
+                    allBtn.addEventListener('click', function() {
+                        // Toggle active state
+                        document.querySelectorAll('.project-filter-btn').forEach(b => {
+                            b.classList.remove('active');
+                        });
+                        this.classList.add('active');
+                        
+                        // Show all events
+                        filterCalendarByProject(calendar, 'all');
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading projects:', error);
+                });
+        }
+        
+        // Function to filter calendar events by project
+        function filterCalendarByProject(calendar, projectId) {
+            const allEvents = calendar.getEvents();
+            
+            allEvents.forEach(event => {
+                if (projectId === 'all') {
+                    event.setProp('display', 'auto'); // Show all events
+                } else {
+                    const eventProjectId = event.extendedProps.projectId;
+                    if (eventProjectId == projectId) {
+                        event.setProp('display', 'auto'); // Show this event
+                    } else {
+                        event.setProp('display', 'none'); // Hide this event
+                    }
+                }
+            });
+        }
         
         // Function to handle external drag and drop
         function initExternalDrag(calendar) {

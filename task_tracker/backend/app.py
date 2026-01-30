@@ -504,6 +504,20 @@ def create_task_without_project():
         # For GET request, redirect directly to the edit task page
         return redirect(url_for('edit_task', task_id=task_id))
 
+@app.route('/api/projects')
+def api_projects():
+    """API endpoint to get all projects"""
+    conn = get_db_connection()
+    projects = conn.execute('SELECT id, name, identifier FROM projects').fetchall()
+    conn.close()
+    
+    projects_list = []
+    for project in projects:
+        projects_list.append(dict(project))
+    
+    return jsonify(projects_list)
+
+
 @app.route('/api/tasks')
 def api_tasks():
     conn = get_db_connection()
